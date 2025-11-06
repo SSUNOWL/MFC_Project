@@ -65,7 +65,7 @@ void CServiceSocket::OnReceive(int nErrorCode)
 
     if (nRecv > 0)
     {
-
+        buffer[nRecv] = '\0';
         std::string utf8_data(buffer, nRecv);
 
         CString strMessage = UTF8ToCString(utf8_data);

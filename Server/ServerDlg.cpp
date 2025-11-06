@@ -293,15 +293,26 @@ void CServerDlg::OnBnClickedButtonStart()
 }
 
 
+
 void CServerDlg::ProcessAccept(CListenSocket* pListenSocket)
-{
-	//  1. 새로운 CServiceSocket 객체를 생성합니다.
+{// 1. 새로운 CServiceSocket 객체를 생성합니다.
 	CServiceSocket* pNewSocket = new CServiceSocket(this);
 
+	// NULL 체크 추가: 메모리 할당 실패 대비
+	if (pNewSocket == nullptr)
+	{
+		AddLog(_T("FATAL ERROR: CServiceSocket 메모리 할당 실패!"));
+		return;
+	}
+
 	// 2. 리스닝 소켓의 Accept 함수를 호출하여 연결을 새 소켓에 할당
+	// ⭐️ 여기서 Accept를 호출합니다. (중복 호출 없음)
 	if (pListenSocket->Accept(*pNewSocket))
 	{
-		// 3. 성공 시, 소켓 목록에 추가
+		// 3. 연결 수락 성공! FD_READ 이벤트 등록 (클라이언트 메시지 수신 활성화)
+		pNewSocket->AsyncSelect(FD_READ | FD_CLOSE);
+
+		// 4. 소켓 목록에 추가하여 관리
 		m_clientSocketList.AddTail(pNewSocket);
 
 		CString strLog;
@@ -310,8 +321,13 @@ void CServerDlg::ProcessAccept(CListenSocket* pListenSocket)
 	}
 	else
 	{
-		// 4. 실패 시, 객체 해제
-		AddLog(_T("ERROR: 클라이언트 연결 수락 실패!"));
+		// 5. 실패 시, 오류 코드 확인 및 객체 해제
+		DWORD dwError = GetLastError();
+
+		CString strError;
+		strError.Format(_T("ERROR: 클라이언트 연결 수락 실패! (WSA 오류 코드: %d)"), dwError);
+		AddLog(strError);
+
 		delete pNewSocket;
 	}
 }
