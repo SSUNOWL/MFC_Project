@@ -57,7 +57,7 @@ void CClientDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_SEND, m_edit_send);
 	DDX_Control(pDX, IDC_LIST_MESSAGE, m_list_message);
-	DDX_Control(pDX, IDC_STATIC_STATUS, m_static_status);
+	DDX_Control(pDX, IDD_STATIC_STATUS, m_static_status);
 }
 
 BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
