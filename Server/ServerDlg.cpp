@@ -171,10 +171,39 @@ void CServerDlg::OnPaint()
 
 		// 아이콘을 그립니다.
 		dc.DrawIcon(x, y, m_hIcon);
+
 	}
 	else
 	{
+
+
+		CPaintDC dc(this); 
+
+		CPen line_pen(PS_DOT, 1, RGB(80, 80, 80));
+		CPen* p_old_pen = dc.SelectObject(&line_pen);
+		int i = 0;
+		for (i = 1; i < 15; i++) {
+			dc.MoveTo(35, 35 * i);
+			dc.LineTo(980, 35 * i);
+		}
+		for (i = 1; i < 29; i++) {
+			dc.MoveTo(35 * i, 35);
+			dc.LineTo(35 * i, 490);
+		}
+		dc.SelectObject(p_old_pen);
+		line_pen.DeleteObject();
+		for (i = 0; i < 4; i++) {
+			dc.MoveTo(105, 555 + 35 * i);
+			dc.LineTo(700, 555 + 35 * i);
+
+		}
+		for (i = 0; i < 18; i++) {
+			dc.MoveTo(105 + 35 * i, 555);
+			dc.LineTo(105 + 35 * i, 555 + 35 * 3);
+		}
 		CDialogEx::OnPaint();
+
+
 	}
 }
 
