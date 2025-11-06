@@ -218,7 +218,7 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 	// 4. 비동기 연결 시도
 	// Connect 호출 후 즉시 함수 종료되며, 결과는 OnConnect 콜백으로 통보됩니다.
-	if (!m_pClientSocket->Connect(_T("127.0.0.1"), 12345)) //  서버 주소와 포트
+	if (!m_pClientSocket->Connect(_T("10.21.37.77"), 12345)) //  서버 주소와 포트
 	{
 		DWORD dwError = m_pClientSocket->GetLastError();
 

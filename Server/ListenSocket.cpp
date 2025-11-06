@@ -24,3 +24,4 @@ void CListenSocket::OnAccept(int nErrorCode)
 
     CAsyncSocket::OnAccept(nErrorCode);
 }
+
