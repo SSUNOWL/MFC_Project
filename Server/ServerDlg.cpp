@@ -266,9 +266,9 @@ void CServerDlg::OnBnClickedButtonStart()
 	UINT nPort = 12345; // 클라이언트와 동일한 포트 사용
 
 	m_pListenSocket = new CListenSocket(this);
-
+	CString strServerIP = _T("10.21.37.77");
 	// 2. 소켓 생성 및 바인딩
-	if (!m_pListenSocket->Create(nPort))
+	if (!m_pListenSocket->Create(nPort, SOCK_STREAM, FD_ACCEPT, strServerIP))
 	{
 		AddLog(_T("ERROR: 리스닝 소켓 생성 실패!"));
 		delete m_pListenSocket;
