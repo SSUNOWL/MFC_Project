@@ -4,6 +4,7 @@
 #include "ClientDlg.h"
 #include "afxdialogex.h"
 #include "afxsock.h"
+#include "AddressDlg.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -197,48 +198,57 @@ void CClientDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 void CClientDlg::OnBnClickedButtonConnect()
 {
-	// 1. 기존 소켓 정리
-	if (m_pClientSocket)
-	{
-		m_pClientSocket->Close();
-		delete m_pClientSocket;
-		m_pClientSocket = nullptr;
-	}
+	CAddressDlg pAddressDlg;
 
-	// 2. CClientSocket 객체 생성 및 대화 상자 포인터 전달
-	m_pClientSocket = new CClientSocket(this);
 
-	// 3. 소켓 생성
-	if (!m_pClientSocket->Create()) {
-		m_static_status.SetWindowText(_T("소켓 생성 실패!"));
-		delete m_pClientSocket;
-		m_pClientSocket = nullptr;
-		return;
-	}
+	INT_PTR nResponse = pAddressDlg.DoModal();
 
-	// 4. 비동기 연결 시도
-	// Connect 호출 후 즉시 함수 종료되며, 결과는 OnConnect 콜백으로 통보됩니다.
-	if (!m_pClientSocket->Connect(_T("10.21.37.77"), 12345)) //  서버 주소와 포트
-	{
-		DWORD dwError = m_pClientSocket->GetLastError();
+	if (nResponse == IDOK) {
+		CString strServerIP = pAddressDlg.m_strIPAddress;
 
-		// WSAEWOULDBLOCK(10035): 비동기 연결이 진행 중임을 나타냄 (정상)
-		if (dwError != WSAEWOULDBLOCK)
+		// 1. 기존 소켓 정리
+		if (m_pClientSocket)
 		{
-
-			CString strStatus;
-			strStatus.Format(_T("연결 실패! (에러코드: %d)"), dwError);
-			m_static_status.SetWindowText(strStatus);
+			m_pClientSocket->Close();
 			delete m_pClientSocket;
 			m_pClientSocket = nullptr;
 		}
-		else {
-			m_static_status.SetWindowText(_T("서버 연결 시도 중..."));
+
+		// 2. CClientSocket 객체 생성 및 대화 상자 포인터 전달
+		m_pClientSocket = new CClientSocket(this);
+
+		// 3. 소켓 생성
+		if (!m_pClientSocket->Create()) {
+			m_static_status.SetWindowText(_T("소켓 생성 실패!"));
+			delete m_pClientSocket;
+			m_pClientSocket = nullptr;
+			return;
 		}
-	}
-	else // 이 경우는 매우 드물게 Connect가 바로 성공한 경우입니다.
-	{
-		m_static_status.SetWindowText(_T("서버 연결 성공!"));
+
+		// 4. 비동기 연결 시도
+		// Connect 호출 후 즉시 함수 종료되며, 결과는 OnConnect 콜백으로 통보됩니다.
+		if (!m_pClientSocket->Connect(strServerIP, 12345)) //  서버 주소와 포트
+		{
+			DWORD dwError = m_pClientSocket->GetLastError();
+
+			// WSAEWOULDBLOCK(10035): 비동기 연결이 진행 중임을 나타냄 (정상)
+			if (dwError != WSAEWOULDBLOCK)
+			{
+
+				CString strStatus;
+				strStatus.Format(_T("연결 실패! (에러코드: %d)"), dwError);
+				m_static_status.SetWindowText(strStatus);
+				delete m_pClientSocket;
+				m_pClientSocket = nullptr;
+			}
+			else {
+				m_static_status.SetWindowText(_T("서버 연결 시도 중..."));
+			}
+		}
+		else // 이 경우는 매우 드물게 Connect가 바로 성공한 경우입니다.
+		{
+			m_static_status.SetWindowText(_T("서버 연결 성공!"));
+		}
 	}
 }
 

@@ -9,6 +9,7 @@
 #include "afxdialogex.h"
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
+#include "AdressDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -255,41 +256,43 @@ void CServerDlg::OnBnClickedButtonSend()
 
 void CServerDlg::OnBnClickedButtonStart()
 {
+	CAdressDlg pAddressDlg;
+	
+	INT_PTR nResponse = pAddressDlg.DoModal();
 
-	if (m_pListenSocket != nullptr)
-	{
-		AddLog(_T("이미 서버가 실행 중입니다."));
-		return;
+	if (nResponse == IDOK) {
+		CString strServerIP = pAddressDlg.m_strIPAddress;
+
+
+		//  1. AfxSocketInit()은 CWinApp::InitInstance()에서 이미 호출되었다고 가정합니다.
+		UINT nPort = 12345; // 클라이언트와 동일한 포트 사용
+
+		m_pListenSocket = new CListenSocket(this);
+
+		// 2. 소켓 생성 및 바인딩
+		if (!m_pListenSocket->Create(nPort, SOCK_STREAM, FD_ACCEPT, strServerIP))
+		{
+			AddLog(_T("ERROR: 리스닝 소켓 생성 실패!"));
+			delete m_pListenSocket;
+			m_pListenSocket = nullptr;
+			return;
+		}
+
+		// 3. 리스닝 시작 (비동기 대기)
+		if (!m_pListenSocket->Listen())
+		{
+			AddLog(_T("ERROR: 리스닝 시작 실패!"));
+			m_pListenSocket->Close();
+			delete m_pListenSocket;
+			m_pListenSocket = nullptr;
+			return;
+		}
+
+		CString strLog;
+		strLog.Format(_T("서버 시작 성공! 포트 %d에서 연결 대기 중..."), nPort);
+		AddLog(strLog);
+		// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	}
-
-	//  1. AfxSocketInit()은 CWinApp::InitInstance()에서 이미 호출되었다고 가정합니다.
-	UINT nPort = 12345; // 클라이언트와 동일한 포트 사용
-
-	m_pListenSocket = new CListenSocket(this);
-	CString strServerIP = _T("10.21.37.77");
-	// 2. 소켓 생성 및 바인딩
-	if (!m_pListenSocket->Create(nPort, SOCK_STREAM, FD_ACCEPT, strServerIP))
-	{
-		AddLog(_T("ERROR: 리스닝 소켓 생성 실패!"));
-		delete m_pListenSocket;
-		m_pListenSocket = nullptr;
-		return;
-	}
-
-	// 3. 리스닝 시작 (비동기 대기)
-	if (!m_pListenSocket->Listen())
-	{
-		AddLog(_T("ERROR: 리스닝 시작 실패!"));
-		m_pListenSocket->Close();
-		delete m_pListenSocket;
-		m_pListenSocket = nullptr;
-		return;
-	}
-
-	CString strLog;
-	strLog.Format(_T("서버 시작 성공! 포트 %d에서 연결 대기 중..."), nPort);
-	AddLog(strLog);
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
 
 
