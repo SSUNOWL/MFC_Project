@@ -405,6 +405,8 @@ void CServerDlg::BroadcastMessage(const CString& strType, const CString& strSend
 	}
 }
 
+
+
 void CServerDlg::OnBnClickedButtonReceive()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.

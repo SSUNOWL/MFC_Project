@@ -5,6 +5,7 @@
 #pragma once
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
+#include <array>
 
 // CServerDlg 대화 상자
 class CServerDlg : public CDialogEx
