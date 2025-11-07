@@ -84,6 +84,9 @@ void CServiceSocket::OnReceive(int nErrorCode)
             if (strType == _T("CHAT")) {
                 m_pServerDlg->DisplayMessage(strSender, strSend, TRUE);
             }
+            else if (strType == _T("RECEIVE")) {
+
+            }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)

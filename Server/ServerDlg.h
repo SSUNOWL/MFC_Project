@@ -57,4 +57,40 @@ public:
 	CEdit m_edit_send;
 //	CListBox m_list_Message;
 	CListBox m_list_message;
+	afx_msg void OnBnClickedButtonReceive();
+
+	// 색상을 정의하는 열거형(enum)
+	enum Color {
+		RED,
+		GREEN,
+		BLUE,
+		BLACK
+	};
+
+	// 타일 구조체
+	struct Tile
+	{
+		Color color;
+		int num;
+		bool isJoker;
+	};
+	// === [게임 상태: 서버 권위] ===
+   // 전체 106장(색 4 × 1~13 × 2세트 = 104 + 조커 2)
+	std::array<Tile, 106> m_tile_list;      // 원본 덱
+	std::array<Tile, 106> m_rand_tile_list; // 셔플 덱
+	int m_deck_pos = 0; // 다음에 줄 카드 인덱스 (0부터 증가)
+
+	// 공용판 13x27, 개인판 3x17 (인덱스는 1..13/27 을 쓰려면 0행/0열은 패딩)
+	Tile m_old_public_tile[14][28]{};
+	Tile m_old_private_tile[4][18]{};
+	Tile m_public_tile[14][28]{};
+	Tile m_private_tile[4][18]{};
+
+	// === [유틸/로직] ===
+	void InitTiles();                 // 106장 생성
+	void ShuffleTiles();              // 셔플
+	bool DealOneTileTo(class CServiceSocket* pSock); // 한 장 지급
+	static CString TileToString(const Tile& t);      // 직렬화
+	static Tile    MakeJoker();       // 조커 생성
+	static Tile    MakeEmpty();       // 빈칸 생성
 };
