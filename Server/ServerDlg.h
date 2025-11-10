@@ -50,9 +50,7 @@ public:
 	// 클라이언트 연결 종료 처리 (CServiceSocket::OnClose에서 호출)
 	void RemoveClient(CServiceSocket* pServiceSocket);
 
-	// 메시지 전체 클라이언트에게 전송 (CServiceSocket::OnReceive에서 호출)
-	void BroadcastMessage(const CString& strType, const CString& strSender, const CString& strMsg, CServiceSocket* pSender);
-
+	
 	void AddLog(const CString& strMsg);
 	void DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived);
 	CEdit m_edit_send;
@@ -94,4 +92,13 @@ public:
 	static CString TileToString(const Tile& t);      // 직렬화
 	static Tile    MakeJoker();       // 조커 생성
 	static Tile    MakeEmpty();       // 빈칸 생성
+
+	//======
+	//단일 대상한테만 보내기 -> receive버튼, 타일 돌리기
+	void ResponseMessage(const CString& strMsg, CServiceSocket* pSender);
+	// 메시지 전체 클라이언트에게 전송 (CServiceSocket::OnReceive에서 호출) 
+	void BroadcastMessage(const CString& strMsg, CServiceSocket* pSender);
+
+
+	CString m_strName;
 };
