@@ -51,6 +51,7 @@ CClientDlg::CClientDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_CLIENT_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_strName = _T("");
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -102,6 +103,8 @@ BOOL CClientDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+
+	m_strName = _T("익명");
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -205,7 +208,7 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 	if (nResponse == IDOK) {
 		CString strServerIP = pAddressDlg.m_strIPAddress;
-
+		m_strName = pAddressDlg.m_strName;
 		// 1. 기존 소켓 정리
 		if (m_pClientSocket)
 		{
@@ -254,39 +257,48 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 void CClientDlg::OnBnClickedButtonSend()
 {
+
+	// 1. 입력창에서 메시지 가져오기
+	CString strSend;
+	m_edit_send.GetWindowText(strSend);
+
+	if (strSend.IsEmpty()) return;
+	
+	CString strMsg;
+	strMsg.Format(_T("type:CHAT|sender:%s|content:%s"), m_strName, strSend);
+	RequestMessage(strMsg);
+
+	DisplayMessage(m_strName, strSend, FALSE);
+	// 소켓 통신 오류 해결을 하려면 request message에서 response받아서 해결해야할듯
+
+	m_edit_send.SetWindowText(_T(""));
+
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}
+
+
+void CClientDlg::RequestMessage(CString& strMsg) {
 	if (m_pClientSocket == nullptr || !m_pClientSocket->IsConnected())
 	{
 		m_static_status.SetWindowText(_T("연결되지 않았습니다."));
 		return;
 	}
 
-	// 1. 입력창에서 메시지 가져오기
-	CString strSend;
-	m_edit_send.GetWindowText(strSend);
 	//  1. 유니코드 -> ANSI 변환을 위해 USES_CONVERSION 매크로를 함수 시작 부분에 추가 (필수)
 	USES_CONVERSION;
-	
+
 	//  2. CT2A 매크로를 사용하여 LPCSTR로 안전하게 변환
 	// CAsyncSocket::Send는 멀티바이트(ANSI) 문자열을 받습니다.
-	if (strSend.IsEmpty()) return;
-	CString strMessageToSend;
-	CString strSender = _T("우저");
-	strMessageToSend.Format(
-		_T("type:CHAT|sender:%s|content:%s"),
-		strSender, strSend
-	);
-	std::string utf8_data = CStringToUTF8(strMessageToSend);
+
+
+	std::string utf8_data = CStringToUTF8(strMsg);
 	// 2. 소켓을 통해 서버로 데이터 전송
 	// CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
 	int nBytesSent = m_pClientSocket->Send(utf8_data.c_str(), (int)utf8_data.length()); //  수정
 
 	if (nBytesSent == (int)utf8_data.length())
 	{
-		// 3. UI에 보낸 메시지 출력
-		DisplayMessage(strSender, strSend, FALSE);
-
-		// 4. 입력창 비우기
-		m_edit_send.SetWindowText(_T(""));
+		//정상 작동시 
 	}
 	else if (nBytesSent == SOCKET_ERROR)
 	{
@@ -297,5 +309,6 @@ void CClientDlg::OnBnClickedButtonSend()
 	}
 	// nBytesSent < strSend.GetLength()인 경우: 다음에 다시 보내거나 버퍼링해야 함 (복잡해지므로 단순화)
 
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+
+
 }

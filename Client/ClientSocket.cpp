@@ -73,16 +73,21 @@ void CClientSocket::OnReceive(int nErrorCode)
 
         CString strMessage = UTF8ToCString(utf8_data);
         CStringToStringMap messageMap;
-        CString strSend, strType, strSender;
+        CString strType, strSender;
         ParseMessageToMap(strMessage, messageMap);
-        if (messageMap.Lookup(_T("content"), strSend));
         if (messageMap.Lookup(_T("type"), strType));
         if (messageMap.Lookup(_T("sender"), strSender));
         // 대화 상자 함수를 호출하여 메시지를 UI에 출력
         if (m_pClientDlg)
         {
             if (strType == _T("CHAT")) {
+                CString strSend;
+                if (messageMap.Lookup(_T("content"), strSend));
+
                 m_pClientDlg->DisplayMessage(strSender, strSend, TRUE);
+            }
+            else if (strType == _T("PLACE")) {
+
             }
         }
     }
