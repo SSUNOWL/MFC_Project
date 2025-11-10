@@ -268,7 +268,8 @@ void CServerDlg::OnBnClickedButtonStart()
 
 	if (nResponse == IDOK) {
 		CString strServerIP = pAddressDlg.m_strIPAddress;
-		m_strName = pAddressDlg.m_strName;
+		if (pAddressDlg.m_strName.IsEmpty() ) m_strName = _T("서버");
+		else m_strName = pAddressDlg.m_strName;
 
 		//  1. AfxSocketInit()은 CWinApp::InitInstance()에서 이미 호출되었다고 가정합니다.
 		UINT nPort = 12345; // 클라이언트와 동일한 포트 사용

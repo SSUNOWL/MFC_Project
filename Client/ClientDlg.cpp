@@ -208,7 +208,10 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 	if (nResponse == IDOK) {
 		CString strServerIP = pAddressDlg.m_strIPAddress;
-		m_strName = pAddressDlg.m_strName;
+
+		if (pAddressDlg.m_strName.IsEmpty()) m_strName = _T("익명");
+		else m_strName = pAddressDlg.m_strName;
+
 		// 1. 기존 소켓 정리
 		if (m_pClientSocket)
 		{
