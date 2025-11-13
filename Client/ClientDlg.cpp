@@ -50,6 +50,7 @@ CClientDlg::CClientDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_CLIENT_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_card_list.reserve(106);
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
