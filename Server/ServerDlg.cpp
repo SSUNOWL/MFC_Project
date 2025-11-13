@@ -10,7 +10,11 @@
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
 #include "AdressDlg.h"
+#include <algorithm>
+#include <chrono>
+#include <random>
 #include <list>
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -143,7 +147,8 @@ BOOL CServerDlg::OnInitDialog()
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
 	m_strName = _T("서버");
-
+	InitTiles();
+	ShuffleTiles();
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -442,6 +447,41 @@ void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender)
 
 }
 
+
+
+void CServerDlg::InitTiles() {
+	int k = 0;
+
+	// 4색 × (1~13 각 2장) = 104장
+	for (int c = RED; c <= BLACK; ++c) {
+		for (int n = 1; n <= 13; ++n) {
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, k+1};
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, k+1};
+		}
+	}
+	// 조커 2장(관례: BLACK, num=0)
+	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
+	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
+
+}
+
+void CServerDlg::ShuffleTiles() {
+
+	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+	m_rand_tile_list = m_tile_list; // 깊은 복사가 구현되어있다고 함
+	std::shuffle(m_rand_tile_list.begin(), m_rand_tile_list.end(), std::default_random_engine(seed));
+
+	//확인절차
+	/*for (Tile c : m_rand_tile_list) {
+		CString s;
+		s.Format(_T("%d, %d, %d"), c.num, c.color, c.tileId);
+
+		AddLog(s);
+		
+	}*/   
+
+
+}
 
 void CServerDlg::OnBnClickedButtonReceive()
 {

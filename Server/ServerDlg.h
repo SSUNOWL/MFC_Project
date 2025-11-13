@@ -8,6 +8,8 @@
 #include <array>
 #include <list>
 
+#include <algorithm>
+
 // CServerDlg 대화 상자
 class CServerDlg : public CDialogEx
 {
@@ -72,11 +74,13 @@ public:
 		Color color;
 		int num;
 		bool isJoker;
+		int tileId;
+
 	};
 	// === [게임 상태: 서버 권위] ===
    // 전체 106장(색 4 × 1~13 × 2세트 = 104 + 조커 2)
 	std::array<Tile, 106> m_tile_list;      // 원본 덱
-	std::array<Tile, 106> m_rand_tile_list; // 셔플 덱
+	std::array<Tile, 106> m_rand_tile_list; // 셔플 덱 --> 우리가 사용할꺼임
 	int m_deck_pos = 0; // 다음에 줄 카드 인덱스 (0부터 증가)
 
 	// 공용판 13x27, 개인판 3x17 (인덱스는 1..13/27 을 쓰려면 0행/0열은 패딩)
