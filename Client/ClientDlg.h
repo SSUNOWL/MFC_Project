@@ -26,6 +26,8 @@ class CClientDlg : public CDialogEx
 private:
 	Tile m_tile_list[106]; //전체 타일 리스트
 	Tile m_rand_tile_list[106]; //타일 섞은 후 저장용
+	Tile m_rand_tile_list_cpy[106]; //타일 섞은 후 저장용
+
 
 	Tile m_public_tile[14][28]; // 공용판은 13x27. 1~13, 1~27로 좌표 지정
 	Tile m_private_tile[4][18]; // 개인판은 3x17. 1~3, 1~17로 좌표 지정
@@ -37,7 +39,7 @@ private:
 	void ClearBoards();
 	void CopyBoards();
 	void CopyBoardsReverse();
-	void ShuffleTiles(int swaps = 300);
+	//void ShuffleTiles(int swaps = 300);
 	inline Tile MakeEmptyTile() const { return Tile{ BLACK, 0, false }; }
 
 public:

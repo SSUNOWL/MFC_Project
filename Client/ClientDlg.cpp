@@ -50,7 +50,6 @@ CClientDlg::CClientDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_CLIENT_DIALOG, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-	m_card_list.reserve(106);
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -75,7 +74,7 @@ END_MESSAGE_MAP()
 BOOL CClientDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
-
+	InitTiles();
 	// 시스템 메뉴에 "정보..." 메뉴 항목을 추가합니다.
 
 	// IDM_ABOUTBOX는 시스템 명령 범위에 있어야 합니다.
@@ -105,6 +104,63 @@ BOOL CClientDlg::OnInitDialog()
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
+
+
+void CClientDlg::InitTiles() {
+	int k = 0;
+
+	// 4색 × (1~13 각 2장) = 104장
+	for (int c = RED; c <= BLACK; ++c) {
+		for (int n = 1; n <= 13; ++n) {
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false };
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false };
+		}
+	}
+	// 조커 2장(관례: BLACK, num=0)
+	m_tile_list[k++] = Tile{ BLACK, 0, true };
+	m_tile_list[k++] = Tile{ BLACK, 0, true };
+
+}
+void CClientDlg::ClearBoards() {
+	const Tile empty = MakeEmptyTile();
+
+	// 공용판 (전체 0~끝까지 채우고, 실제 사용은 [1..13][1..27])
+	for (int r = 0; r < 14; ++r)
+		for (int c = 0; c < 28; ++c)
+			m_public_tile[r][c] = empty;
+
+	// 개인판 (전체 0~끝까지 채우고, 실제 사용은 [1..3][1..17])
+	for (int r = 0; r < 4; ++r)
+		for (int c = 0; c < 18; ++c)
+			m_private_tile[r][c] = empty;
+}
+void CClientDlg::CopyBoards() {
+	int i = 0, j = 0;
+	for (i = 0; i < 14; i++)
+		for (j = 0; j < 28; j++)
+			m_old_public_tile[i][j] = m_public_tile[i][j];
+
+	for (i = 0; i < 4; i++)
+		for (j = 0; j < 18; j++)
+			m_old_private_tile[i][j] = m_private_tile[i][j];
+	
+	for (i = 0; i < 106; i++)
+		m_rand_tile_list_cpy[i] = m_rand_tile_list[i];
+}
+void CClientDlg::CopyBoardsReverse() {
+	int i = 0, j = 0;
+	for (i = 0; i < 14; i++)
+		for (j = 0; j < 28; j++)
+			m_public_tile[i][j] = m_old_public_tile[i][j];
+
+	for (i = 0; i < 4; i++)
+		for (j = 0; j < 18; j++)
+			m_private_tile[i][j] = m_old_private_tile[i][j];
+
+	for (i = 0; i < 106; i++)
+		m_rand_tile_list[i] = m_rand_tile_list_cpy[i];
+}
+	
 
 void CClientDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
