@@ -462,7 +462,6 @@ void CServerDlg::InitTiles() {
 	// 조커 2장(관례: BLACK, num=0)
 	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
 	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
-
 }
 
 void CServerDlg::ShuffleTiles() {
@@ -497,19 +496,6 @@ bool CServerDlg::IsPublicTileValid()
 {
 	/*
 	공용판이 올바른지 공용판의 각 행 별로 검사하는 메소드.
-
-	테스트 케이스 예시)
-	유효한 경우:
-	- 빨강 1-2-3
-	- 파랑 10-11-12-13
-	- 빨강7, 파랑7, 검정7
-	- 빨강 5-조커-7 (런)
-	- 빨강9, 조커, 파랑9 (그룹)
-	무효한 경우:
-	- 빨강 1-3-5 (연속 안됨)
-	- 빨강7, 빨강7, 파랑7 (색 중복)
-	- 빨강 1-2 (3개 미만)
-	- 빨강 1-2-파랑3 (색 다름)
 	*/
 
 	for (int i = 1; i <= 13; i++) // 공용판의 각 행에 대해 반복
@@ -529,10 +515,10 @@ bool CServerDlg::IsRowValid(int row)
 	특정 행의 타일 조합들이 모두 유효한지 검사
 
 	런과 그룹은 다음과 같이 정의함
-	- 런(Run): 같은 색의 연속된 숫자 (예: 빨강 3-4-5)
-	- 그룹(Group): 같은 숫자의 다른 색 (예: 빨강7, 파랑7, 검정7)
+	런(Run): 같은 색의 연속된 숫자 (예: 빨강 3-4-5)
+	그룹(Group): 같은 숫자의 다른 색 (예: 빨강7, 파랑7, 검정7)
 
-	청크(chunk)는 행에서 인접한 타일들의 묶음으로, 조건 검사의 대상임
+	청크(chunk)는 행에서 인접한 타일들의 묶음으로, 조건 검사의 단위임
 	*/
 	std::list<Tile> tileChunk; // 현재 검사 중인 타일 그룹
 
@@ -541,8 +527,13 @@ bool CServerDlg::IsRowValid(int row)
 		Tile currentTile = m_public_tile[row][i];
 
 		// 빈 칸을 만나거나 마지막 칸일 때, chunk가 비어있지 않은 경우(검사 필요)
-		if (((currentTile.num == 0) || (i == 27)) && (!tileChunk.empty()))
+		if (((currentTile.num == 0) && (!currentTile.isJoker)) || (i == 27))
 		{
+			if (tileChunk.empty())
+			{
+				continue;
+			}
+
 			// chunk 검증
 			if (IsRunValid(tileChunk) || IsGroupValid(tileChunk))
 			{
