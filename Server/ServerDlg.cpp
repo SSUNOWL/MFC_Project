@@ -460,16 +460,20 @@ void CServerDlg::InitTiles() {
 }
 
 void CServerDlg::ShuffleTiles() {
+
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	m_rand_tile_list = m_tile_list; // 깊은 복사가 구현되어있다고 함
-	std::shuffle(m_tile_list.begin(), m_tile_list.end(), std::default_random_engine(seed));
+	std::shuffle(m_rand_tile_list.begin(), m_rand_tile_list.end(), std::default_random_engine(seed));
 
+	//확인절차
 	/*for (Tile c : m_rand_tile_list) {
 		CString s;
-		
-		s.Format(_T("%s, %s, %s %s"), c.color, c.isJoker, c.num, c.tileId);
+		s.Format(_T("%d, %d, %d"), c.num, c.color, c.tileId);
+
 		AddLog(s);
-	}*/
+		
+	}*/   
+
 
 }
 
