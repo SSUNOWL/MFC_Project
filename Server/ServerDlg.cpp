@@ -479,5 +479,5 @@ void CServerDlg::OnBnClickedButtonReceive()
 	// 시작 전 판을 변경 전으로 돌리는 SetBack 실행
 	CString strMsg;
 	strMsg.Format(_T("type:RECEIVE|sender:%s"), m_strName);
-	ResponseMessage(strMsg, );
+	ResponseMessage(strMsg,); // 이건 client에서
 }

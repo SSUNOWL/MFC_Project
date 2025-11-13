@@ -92,6 +92,9 @@ void CServiceSocket::OnReceive(int nErrorCode)
             else if (strType == _T("PLACE")) {
 
             }
+            else if (strType == _T("RECEIVE")) {
+
+            }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)
