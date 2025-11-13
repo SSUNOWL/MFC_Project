@@ -6,6 +6,7 @@
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
 #include <array>
+#include <list>
 
 // CServerDlg 대화 상자
 class CServerDlg : public CDialogEx
@@ -54,7 +55,6 @@ public:
 	void AddLog(const CString& strMsg);
 	void DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived);
 	CEdit m_edit_send;
-//	CListBox m_list_Message;
 	CListBox m_list_message;
 	afx_msg void OnBnClickedButtonReceive();
 
@@ -101,4 +101,14 @@ public:
 
 
 	CString m_strName;
+	afx_msg void OnBnClickedButtonPass();
+	bool IsPublicTileValid();
+public:
+	afx_msg void OnClickedButtonPass();
+	int m_intPrivateTileNum;
+private:
+	bool IsRowValid(int);
+private:
+	bool IsRunValid(std::list<Tile> tileChunk);
+	bool IsGroupValid(std::list<Tile> tileChunk);
 };
