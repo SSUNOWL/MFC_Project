@@ -464,7 +464,7 @@ void CServerDlg::ShuffleTiles() {
 	m_rand_tile_list = m_tile_list; // 깊은 복사가 구현되어있다고 함
 	std::shuffle(m_tile_list.begin(), m_tile_list.end(), std::default_random_engine(seed));
 
-	for (Tile c :/* m_rand_tile_list) {
+	/*for (Tile c : m_rand_tile_list) {
 		CString s;
 		
 		s.Format(_T("%s, %s, %s %s"), c.color, c.isJoker, c.num, c.tileId);
