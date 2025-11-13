@@ -9,6 +9,7 @@
 #include "afxdialogex.h"
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
+#include "AdressDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -57,6 +58,7 @@ CServerDlg::CServerDlg(CWnd* pParent /*=nullptr*/)
 	, m_pListenSocket(nullptr)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_strName = _T("");
 }
 CServerDlg::~CServerDlg()
 {
@@ -97,6 +99,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CServerDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
+	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
 END_MESSAGE_MAP()
 
 
@@ -132,6 +135,8 @@ BOOL CServerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+
+	m_strName = _T("서버");
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -243,65 +248,81 @@ void CServerDlg::OnBnClickedButton1()
 
 void CServerDlg::OnBnClickedButtonSend()
 {
-	CString strSend;
-	m_edit_send.GetWindowText(strSend);
-	CString strSender = _T("서버");
+	CString strContent;
+	m_edit_send.GetWindowText(strContent);
+	
 	CString strType = _T("CHAT");
-	BroadcastMessage(strType, strSender, strSend, 0);
-
+	CString strMsg;
+	strMsg.Format(_T("type:%s|sender:%s|content:%s"), strType, m_strName, strContent);
+	BroadcastMessage(strMsg, 0);
+	// pSocket이 0이니까 전부한테 보낸거임
 	m_edit_send.SetWindowText(_T(""));
-	DisplayMessage(strSender, strSend, FALSE);
+	DisplayMessage(m_strName, strContent, FALSE);
 }
 
 void CServerDlg::OnBnClickedButtonStart()
 {
+	CAdressDlg pAddressDlg;
+	
+	INT_PTR nResponse = pAddressDlg.DoModal();
 
-	if (m_pListenSocket != nullptr)
-	{
-		AddLog(_T("이미 서버가 실행 중입니다."));
-		return;
+	if (nResponse == IDOK) {
+		CString strServerIP = pAddressDlg.m_strIPAddress;
+		if (pAddressDlg.m_strName.IsEmpty() ) m_strName = _T("서버");
+		else m_strName = pAddressDlg.m_strName;
+
+		//  1. AfxSocketInit()은 CWinApp::InitInstance()에서 이미 호출되었다고 가정합니다.
+		UINT nPort = 12345; // 클라이언트와 동일한 포트 사용
+
+		m_pListenSocket = new CListenSocket(this);
+
+		// 2. 소켓 생성 및 바인딩
+		if (!m_pListenSocket->Create(nPort, SOCK_STREAM, FD_ACCEPT, strServerIP))
+		{
+			AddLog(_T("ERROR: 리스닝 소켓 생성 실패!"));
+			delete m_pListenSocket;
+			m_pListenSocket = nullptr;
+			return;
+		}
+
+		// 3. 리스닝 시작 (비동기 대기)
+		if (!m_pListenSocket->Listen())
+		{
+			AddLog(_T("ERROR: 리스닝 시작 실패!"));
+			m_pListenSocket->Close();
+			delete m_pListenSocket;
+			m_pListenSocket = nullptr;
+			return;
+		}
+
+		CString strLog;
+		strLog.Format(_T("서버 시작 성공! 포트 %d에서 연결 대기 중..."), nPort);
+		AddLog(strLog);
+		// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	}
-
-	//  1. AfxSocketInit()은 CWinApp::InitInstance()에서 이미 호출되었다고 가정합니다.
-	UINT nPort = 12345; // 클라이언트와 동일한 포트 사용
-
-	m_pListenSocket = new CListenSocket(this);
-
-	// 2. 소켓 생성 및 바인딩
-	if (!m_pListenSocket->Create(nPort))
-	{
-		AddLog(_T("ERROR: 리스닝 소켓 생성 실패!"));
-		delete m_pListenSocket;
-		m_pListenSocket = nullptr;
-		return;
-	}
-
-	// 3. 리스닝 시작 (비동기 대기)
-	if (!m_pListenSocket->Listen())
-	{
-		AddLog(_T("ERROR: 리스닝 시작 실패!"));
-		m_pListenSocket->Close();
-		delete m_pListenSocket;
-		m_pListenSocket = nullptr;
-		return;
-	}
-
-	CString strLog;
-	strLog.Format(_T("서버 시작 성공! 포트 %d에서 연결 대기 중..."), nPort);
-	AddLog(strLog);
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
 
 
+
 void CServerDlg::ProcessAccept(CListenSocket* pListenSocket)
-{
-	//  1. 새로운 CServiceSocket 객체를 생성합니다.
+{// 1. 새로운 CServiceSocket 객체를 생성합니다.
 	CServiceSocket* pNewSocket = new CServiceSocket(this);
 
+	// NULL 체크 추가: 메모리 할당 실패 대비
+	if (pNewSocket == nullptr)
+	{
+		AddLog(_T("FATAL ERROR: CServiceSocket 메모리 할당 실패!"));
+		return;
+	}
+
 	// 2. 리스닝 소켓의 Accept 함수를 호출하여 연결을 새 소켓에 할당
+	// ⭐️ 여기서 Accept를 호출합니다. (중복 호출 없음)
 	if (pListenSocket->Accept(*pNewSocket))
 	{
-		// 3. 성공 시, 소켓 목록에 추가
+		// 3. 연결 수락 성공! FD_READ 이벤트 등록 (클라이언트 메시지 수신 활성화)
+		pNewSocket->AsyncSelect(FD_READ | FD_CLOSE);
+
+		// 4. 소켓 목록에 추가하여 관리
 		m_clientSocketList.AddTail(pNewSocket);
 
 		CString strLog;
@@ -310,8 +331,13 @@ void CServerDlg::ProcessAccept(CListenSocket* pListenSocket)
 	}
 	else
 	{
-		// 4. 실패 시, 객체 해제
-		AddLog(_T("ERROR: 클라이언트 연결 수락 실패!"));
+		// 5. 실패 시, 오류 코드 확인 및 객체 해제
+		DWORD dwError = GetLastError();
+
+		CString strError;
+		strError.Format(_T("ERROR: 클라이언트 연결 수락 실패! (WSA 오류 코드: %d)"), dwError);
+		AddLog(strError);
+
 		delete pNewSocket;
 	}
 }
@@ -336,7 +362,7 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 }
 
 
-void CServerDlg::BroadcastMessage(const CString& strType, const CString& strSender, const CString& strMsg, CServiceSocket* pSender)
+void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender)
 {
 	//  전송을 위한 CString -> LPCSTR 변환 준비
 	USES_CONVERSION;
@@ -358,23 +384,13 @@ void CServerDlg::BroadcastMessage(const CString& strType, const CString& strSend
 			// (선택 사항) 메시지를 보낸 클라이언트에게는 다시 보내지 않으려면 아래 주석 해제
 			 if (pSocket == pSender) continue;
 
-			//  3. 메시지 전송 (Send 함수 사용)
-			// CString을 CT2A 매크로를 이용해 ANSI/멀티바이트 문자열로 변환하여 전송
-			 CString strMessageToSend;
-			 strMessageToSend.Format(
-				 _T("type:%s|sender:%s|content:%s"),
-				 strType, strSender, strMsg
-			 );
-			 
-			 std::string utf8_data = CStringToUTF8(strMessageToSend);
-			 strLog.Format(_T("BROADCAST: %s"), strMessageToSend);
+			//  3. 메시지 전송 (Send 함수 사용
+			 std::string utf8_data = CStringToUTF8(strMsg);
+			 strLog.Format(_T("BROADCAST: %s"), strMsg);
 			 AddLog(strLog);
 			 // 2. 소켓을 통해 서버로 데이터 전송
 			 // CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
-			 int nBytesSent = pSocket->Send(utf8_data.c_str(), (int)utf8_data.length()); //  수정
-
-
-
+			 int nBytesSent = pSocket->Send(utf8_data.c_str(), (int)utf8_data.length()); //  
 			// 전송 오류 처리
 			if (nBytesSent == SOCKET_ERROR)
 			{
@@ -383,4 +399,47 @@ void CServerDlg::BroadcastMessage(const CString& strType, const CString& strSend
 			}
 		}
 	}
+}
+
+
+
+
+void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender) {
+	//  전송을 위한 CString -> LPCSTR 변환 준비
+	USES_CONVERSION;
+
+	// 1. 연결된 클라이언트 목록 순회
+	POSITION pos = m_clientSocketList.GetHeadPosition();
+
+	// 2. 서버 로그에 브로드캐스트 사실 기록
+	CString strLog;
+
+	// 유효한 소켓인지 확인하고, 연결 상태인지 확인합니다.
+	if (pSender && pSender->m_hSocket != NULL && pSender->IsConnected())
+	{
+		// (선택 사항) 메시지를 보낸 클라이언트에게는 다시 보내지 않으려면 아래 주석 해제
+
+		//  3. 메시지 전송 (Send 함수 사용
+		std::string utf8_data = CStringToUTF8(strMsg);
+		strLog.Format(_T("BROADCAST: %s"), strMsg);
+		AddLog(strLog);
+		// 2. 소켓을 통해 서버로 데이터 전송
+		// CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
+		int nBytesSent = pSender->Send(utf8_data.c_str(), (int)utf8_data.length()); //  
+		// 전송 오류 처리
+		if (nBytesSent == SOCKET_ERROR)
+		{
+			// 오류가 발생하면 해당 소켓의 연결을 강제로 끊거나 로그를 남길 수 있습니다.
+			pSender->Close();
+		}
+	}
+
+}
+
+
+void CServerDlg::OnBnClickedButtonReceive()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+
+
 }

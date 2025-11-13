@@ -65,7 +65,7 @@ void CServiceSocket::OnReceive(int nErrorCode)
 
     if (nRecv > 0)
     {
-
+        buffer[nRecv] = '\0';
         std::string utf8_data(buffer, nRecv);
 
         CString strMessage = UTF8ToCString(utf8_data);
@@ -75,14 +75,22 @@ void CServiceSocket::OnReceive(int nErrorCode)
         if (m_pServerDlg)
         {
             m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
-            CString strSend, strType, strSender;
-            if (messageMap.Lookup(_T("content"), strSend));
+            CString strType, strSender;
             if (messageMap.Lookup(_T("type"), strType));
             if (messageMap.Lookup(_T("sender"), strSender));
             //  2. 대화 상자에 브로드캐스트 요청 (메시지 내용과 이 소켓 객체를 보냄)
-            m_pServerDlg->BroadcastMessage(strType, strSender, strMessage, this);
             if (strType == _T("CHAT")) {
+                CString strSend;
+                if (messageMap.Lookup(_T("content"), strSend));
+
                 m_pServerDlg->DisplayMessage(strSender, strSend, TRUE);
+                CString strMsg;
+
+                m_pServerDlg->BroadcastMessage(strMessage, this);
+                
+            }
+            else if (strType == _T("PLACE")) {
+
             }
         }
     }

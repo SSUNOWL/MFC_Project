@@ -73,4 +73,8 @@ public:
 	//  메시지 출력 함수 (소켓 클래스에서 호출될 함수)
 	void DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived);
 	CStatic m_static_status;
+
+	//-------------------
+	void RequestMessage(CString& strMsg);
+	CString m_strName;
 };
