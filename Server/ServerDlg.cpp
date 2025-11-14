@@ -481,7 +481,7 @@ void CServerDlg::OnBnClickedButtonReceive()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	// 시작 전 판을 변경 전으로 돌리는 SetBack 실행
-	//CString strMsg;
-	//strMsg.Format(_T("type:RECEIVE|sender:%s"), m_strName);
-	//ResponseMessage(strMsg,); // 이건 client에서
+	CString strMsg;
+	strMsg.Format(_T("type:RECEIVE|sender:%s"), m_strName);
+	ResponseMessage(strMsg,); // 이건 client에서
 }
