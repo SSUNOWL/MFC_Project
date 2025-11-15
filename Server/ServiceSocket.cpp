@@ -6,7 +6,7 @@
 
 CServiceSocket::CServiceSocket(CServerDlg* pDlg)
     : m_pServerDlg(pDlg)
-    , m_bConnected(TRUE) // ¿¬°áÀÌ ¼ö¶ôµÇ¾úÀ¸¹Ç·Î ÃÊ±â »óÅÂ´Â TRUE
+    , m_bConnected(TRUE) // ì—°ê²°ì´ ìˆ˜ë½ë˜ì—ˆìœ¼ë¯€ë¡œ ì´ˆê¸° ìƒíƒœëŠ” TRUE
 {
     m_strName = _T("");
 }
@@ -18,26 +18,26 @@ CServiceSocket::~CServiceSocket()
 
 void CServiceSocket::OnClose(int nErrorCode)
 {
-    m_bConnected = FALSE; //  »óÅÂ ¾÷µ¥ÀÌÆ®
+    m_bConnected = FALSE; //  ìƒíƒœ ì—…ë°ì´íŠ¸
 
     if (m_pServerDlg)
     {
-        //  ¿¬°á ÇØÁ¦ Ã³¸®¸¦ ´ëÈ­ »óÀÚ¿¡°Ô ¿äÃ»ÇÕ´Ï´Ù.
-        // CServerDlg¿¡ RemoveClient ÇÔ¼ö¸¦ ±¸ÇöÇØ¾ß ÇÕ´Ï´Ù.
+        //  ì—°ê²° í•´ì œ ì²˜ë¦¬ë¥¼ ëŒ€í™” ìƒìžì—ê²Œ ìš”ì²­í•©ë‹ˆë‹¤.
+        // CServerDlgì— RemoveClient í•¨ìˆ˜ë¥¼ êµ¬í˜„í•´ì•¼ í•©ë‹ˆë‹¤.
         m_pServerDlg->RemoveClient(this);
     }
 
-    // ¼ÒÄÏ ÇÚµéÀ» ´Ý°í °´Ã¼´Â ³ªÁß¿¡ CServerDlg¿¡¼­ deleteµÉ °ÍÀÔ´Ï´Ù.
+    // ì†Œì¼“ í•¸ë“¤ì„ ë‹«ê³  ê°ì²´ëŠ” ë‚˜ì¤‘ì— CServerDlgì—ì„œ deleteë  ê²ƒìž…ë‹ˆë‹¤.
     CAsyncSocket::OnClose(nErrorCode);
 }
 typedef CMap<CString, LPCTSTR, CString, LPCTSTR> CStringToStringMap;
 void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
 {
-    // CMap °´Ã¼ »ý¼º ÄÚµå¸¦ Á¦°ÅÇÏ°í, ¸Å°³º¯¼ö mapResult¸¦ ¹Ù·Î »ç¿ëÇÕ´Ï´Ù.
+    // CMap ê°ì²´ ìƒì„± ì½”ë“œë¥¼ ì œê±°í•˜ê³ , ë§¤ê°œë³€ìˆ˜ mapResultë¥¼ ë°”ë¡œ ì‚¬ìš©í•©ë‹ˆë‹¤.
     CString strToken;
     int nPos = 0;
 
-    // ±âÁ¸ µ¥ÀÌÅÍ Á¤¸®
+    // ê¸°ì¡´ ë°ì´í„° ì •ë¦¬
     mapResult.RemoveAll();
 
     strToken = strMessage.Tokenize(_T("|"), nPos);
@@ -50,18 +50,18 @@ void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
             CString strKey = strToken.Left(nColonPos);
             CString strValue = strToken.Mid(nColonPos + 1);
 
-            //  ¸Å°³º¯¼ö·Î ¹ÞÀº mapResult¿¡ »ðÀÔ
+            //  ë§¤ê°œë³€ìˆ˜ë¡œ ë°›ì€ mapResultì— ì‚½ìž…
             mapResult[strKey] = strValue;
         }
         strToken = strMessage.Tokenize(_T("|"), nPos);
     }
-    // ÇÔ¼ö ³¡¿¡¼­ returnÀÌ ÇÊ¿ä ¾ø½À´Ï´Ù.
+    // í•¨ìˆ˜ ëì—ì„œ returnì´ í•„ìš” ì—†ìŠµë‹ˆë‹¤.
 }
 
 void CServiceSocket::OnReceive(int nErrorCode)
 {
     char buffer[1024];
-    // ¹öÆÛ Å©±âº¸´Ù 1 ÀÛ°Ô ¹Þ¾Æ NULL ¹®ÀÚ¸¦ À§ÇÑ °ø°£ È®º¸
+    // ë²„í¼ í¬ê¸°ë³´ë‹¤ 1 ìž‘ê²Œ ë°›ì•„ NULL ë¬¸ìžë¥¼ ìœ„í•œ ê³µê°„ í™•ë³´
     int nRecv = Receive(buffer, sizeof(buffer) - 1);
 
     if (nRecv > 0)
@@ -72,14 +72,14 @@ void CServiceSocket::OnReceive(int nErrorCode)
         CString strMessage = UTF8ToCString(utf8_data);
         CStringToStringMap messageMap;
         ParseMessageToMap(strMessage, messageMap);
-        //  1. ¼­¹ö ·Î±×¿¡ ¸Þ½ÃÁö ¼ö½Å »ç½Ç ±â·Ï
+        //  1. ì„œë²„ ë¡œê·¸ì— ë©”ì‹œì§€ ìˆ˜ì‹  ì‚¬ì‹¤ ê¸°ë¡
         if (m_pServerDlg)
         {
             m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
             CString strType, strSender;
             if (messageMap.Lookup(_T("type"), strType));
             if (messageMap.Lookup(_T("sender"), strSender));
-            //  2. ´ëÈ­ »óÀÚ¿¡ ºê·ÎµåÄ³½ºÆ® ¿äÃ» (¸Þ½ÃÁö ³»¿ë°ú ÀÌ ¼ÒÄÏ °´Ã¼¸¦ º¸³¿)
+            //  2. ëŒ€í™” ìƒìžì— ë¸Œë¡œë“œìºìŠ¤íŠ¸ ìš”ì²­ (ë©”ì‹œì§€ ë‚´ìš©ê³¼ ì´ ì†Œì¼“ ê°ì²´ë¥¼ ë³´ëƒ„)
             if (strType == _T("CHAT")) {
                 CString strSend;
                 if (messageMap.Lookup(_T("content"), strSend));
@@ -98,16 +98,16 @@ void CServiceSocket::OnReceive(int nErrorCode)
                 messageMap.Lookup(_T("name"), m_strName );
 
                 CString strLog;
-                strLog.Format(_T("INFO: Å¬¶óÀÌ¾ðÆ® %s ¿¬°á ¼ö¶ôµÊ (ÇöÀç %d¸í)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
+                strLog.Format(_T("INFO: í´ë¼ì´ì–¸íŠ¸ %s ì—°ê²° ìˆ˜ë½ë¨ (í˜„ìž¬ %dëª…)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
                 m_pServerDlg->AddLog(strLog);
                 //m_pServerDlg->BroadcastMessage(strLog, this); 
-                // ´Ù¸¥ ÇÃ·¹ÀÌ¾îµé¿¡°Ô Àü´Þ
+                // ë‹¤ë¥¸ í”Œë ˆì´ì–´ë“¤ì—ê²Œ ì „ë‹¬
             }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)
     {
-        // ¿¬°áÀÌ Á¤»ó Á¾·áµÇ°Å³ª ¿À·ù°¡ ¹ß»ýÇÏ¸é OnClose¸¦ È£ÃâÇÏ¿© Á¤¸®
+        // ì—°ê²°ì´ ì •ìƒ ì¢…ë£Œë˜ê±°ë‚˜ ì˜¤ë¥˜ê°€ ë°œìƒí•˜ë©´ OnCloseë¥¼ í˜¸ì¶œí•˜ì—¬ ì •ë¦¬
         OnClose(nErrorCode);
         return;
     }
