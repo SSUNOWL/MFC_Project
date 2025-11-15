@@ -63,6 +63,7 @@ CServerDlg::CServerDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_strName = _T("");
+	//  m_intTurnPos = 0;
 }
 CServerDlg::~CServerDlg()
 {
@@ -104,6 +105,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CServerDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
+	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
 END_MESSAGE_MAP()
 
 
@@ -142,7 +144,6 @@ BOOL CServerDlg::OnInitDialog()
 
 	m_strName = _T("서버");
 	InitTiles();
-	ShuffleTiles();
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -321,18 +322,20 @@ void CServerDlg::ProcessAccept(CListenSocket* pListenSocket)
 	}
 
 	// 2. 리스닝 소켓의 Accept 함수를 호출하여 연결을 새 소켓에 할당
-	// ⭐️ 여기서 Accept를 호출합니다. (중복 호출 없음)
+	// 여기서 Accept를 호출합니다. (중복 호출 없음)
 	if (pListenSocket->Accept(*pNewSocket))
 	{
 		// 3. 연결 수락 성공! FD_READ 이벤트 등록 (클라이언트 메시지 수신 활성화)
 		pNewSocket->AsyncSelect(FD_READ | FD_CLOSE);
-
-		// 4. 소켓 목록에 추가하여 관리
+		CString strMsg;
+		strMsg.Format(_T("type:GetName|sender:%s"), m_strName);
+		ResponseMessage(strMsg, pNewSocket);
+		// 4. 소켓 목록에 추가하여 관리 
 		m_clientSocketList.AddTail(pNewSocket);
 
-		CString strLog;
+		/*CString strLog;
 		strLog.Format(_T("INFO: 클라이언트 연결 수락됨 (현재 %d명)"), m_clientSocketList.GetCount());
-		AddLog(strLog);
+		AddLog(strLog);*/
 	}
 	else
 	{
@@ -366,7 +369,7 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 	}
 }
 
-
+//pSender를 제외한 클라이언트에게 전달
 void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender)
 {
 	//  전송을 위한 CString -> LPCSTR 변환 준비
@@ -445,18 +448,28 @@ void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender)
 
 void CServerDlg::InitTiles() {
 	int k = 0;
-
+	int nTileid = 1;
 	// 4색 × (1~13 각 2장) = 104장
 	for (int c = RED; c <= BLACK; ++c) {
 		for (int n = 1; n <= 13; ++n) {
-			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, k+1};
-			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, k+1};
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, nTileid++};
+		}
+		for (int n = 1; n <= 13; ++n) {
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, nTileid++ };
 		}
 	}
+	
 	// 조커 2장(관례: BLACK, num=0)
-	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
-	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
+	m_tile_list[k++] = Tile{ BLACK, 0, true , nTileid++};
+	m_tile_list[k++] = Tile{ BLACK, 0, true , nTileid++};
 
+	/*for (Tile c : m_tile_list) {
+		CString s;
+		s.Format(_T("%d, %d, %d"), c.num, c.color, c.tileId);
+
+		AddLog(s);
+
+	}*/
 }
 
 void CServerDlg::ShuffleTiles() {
@@ -477,6 +490,41 @@ void CServerDlg::ShuffleTiles() {
 
 }
 
+
+void CServerDlg::PlayGame() { 
+	// 유저 정보 요청해서 다 받음.
+	//게임 시작할때 필요되는 초기화 과정 전부 여기서 진행
+
+	ShuffleTiles();
+	
+	//턴 초기화하면 아마도 이거임
+	
+
+	for (int i = 1; i <= 14; i++) {
+		m_private_tile[1][i] = m_rand_tile_list[m_deck_pos];
+		CString strLog;
+		strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[1][i].color, m_private_tile[1][i].num, m_private_tile[1][i].tileId, 1, i);
+		AddLog(strLog);
+		m_deck_pos++;
+	}
+
+	POSITION pos = m_clientSocketList.GetHeadPosition();
+
+	while (pos != NULL)
+	{
+		CServiceSocket* pSocket = m_clientSocketList.GetNext(pos);
+		for (int i = 1; i <= 14; i++) {
+			CString strMsg;
+			strMsg.Format(_T("type:StartTile|sender:%s|pos:%d,%d|tileid:%d"), m_strName, 1, i, m_rand_tile_list[m_deck_pos].tileId);
+			ResponseMessage(strMsg, pSocket);
+			m_deck_pos++;
+		}
+	}
+	//개인 타일판을 시각화하는 함수
+
+
+}
+
 void CServerDlg::OnBnClickedButtonReceive()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
@@ -484,4 +532,10 @@ void CServerDlg::OnBnClickedButtonReceive()
 	//CString strMsg;
 	//strMsg.Format(_T("type:RECEIVE|sender:%s"), m_strName);
 	//ResponseMessage(strMsg,); // 이건 client에서
+}
+
+void CServerDlg::OnBnClickedButtonPlay()
+{
+	PlayGame();
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }

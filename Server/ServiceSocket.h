@@ -24,4 +24,7 @@ protected:
 private:
     CServerDlg* m_pServerDlg;
     BOOL m_bConnected; // 연결 상태 저장
+public:
+//    CString Name;
+    CString m_strName;
 };
