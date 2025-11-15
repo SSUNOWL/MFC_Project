@@ -17,13 +17,14 @@ struct Tile {
 	Color color;
 	int num;
 	bool isJoker;
+	int tileId;
 };
 
 // CClientDlg 대화 상자
 class CClientDlg : public CDialogEx
 {
 	// 생성입니다.
-private:
+public:
 	Tile m_tile_list[106]; //전체 타일 리스트
 	Tile m_rand_tile_list[106]; //타일 섞은 후 저장용
 	Tile m_rand_tile_list_cpy[106]; //타일 섞은 후 저장용
@@ -41,6 +42,7 @@ private:
 	void CopyBoardsReverse();
 	//void ShuffleTiles(int swaps = 300);
 	inline Tile MakeEmptyTile() const { return Tile{ BLACK, 0, false }; }
+	Tile ParseIdtoTile(int Tileid);
 
 public:
 	CClientDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.

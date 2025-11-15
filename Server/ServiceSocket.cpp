@@ -8,6 +8,7 @@ CServiceSocket::CServiceSocket(CServerDlg* pDlg)
     : m_pServerDlg(pDlg)
     , m_bConnected(TRUE) // 연결이 수락되었으므로 초기 상태는 TRUE
 {
+    m_strName = _T("");
 }
 
 CServiceSocket::~CServiceSocket()
@@ -91,6 +92,16 @@ void CServiceSocket::OnReceive(int nErrorCode)
             }
             else if (strType == _T("PLACE")) {
 
+            }
+            else if (strType == _T("GetName")) {
+
+                messageMap.Lookup(_T("name"), m_strName );
+
+                CString strLog;
+                strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
+                m_pServerDlg->AddLog(strLog);
+                //m_pServerDlg->BroadcastMessage(strLog, this); 
+                // 다른 플레이어들에게 전달
             }
         }
     }

@@ -372,3 +372,33 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 
 
 }
+
+
+
+
+Tile CClientDlg::ParseIdtoTile(int Tileid) {
+	// 해결책: 변수 선언과 동시에 기본값을 할당하여
+	// 모든 코드 경로에서 초기화 상태를 보장합니다.
+	Color c = BLACK;
+	Tile newTile = Tile{ BLACK, 0, false, 0 }; // 초기화
+
+	if (Tileid >= 105) { // 조커 타일 (105, 106)
+		newTile = Tile{ BLACK, 0, true , Tileid };
+	}
+	else { // 일반 타일 (1~104)
+		int color_group = Tileid / 26;
+
+		// switch-case가 if-else if보다 더 명확합니다.
+		switch (color_group) {
+		case 0: c = RED; break;
+		case 1: c = GREEN; break;
+		case 2: c = BLUE; break;
+		case 3: c = BLACK; break;
+			// default 케이스를 넣으면 범위 외의 값(0, 4 이상)이 들어와도 c는 초기화된 값(BLACK)을 유지합니다.
+		default: break;
+		}
+
+		newTile = Tile{ c, Tileid % 26 + 1, false, Tileid };
+	}
+	return newTile;
+}

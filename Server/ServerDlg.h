@@ -96,7 +96,7 @@ public:
 	static CString TileToString(const Tile& t);      // 직렬화
 	static Tile    MakeJoker();       // 조커 생성
 	static Tile    MakeEmpty();       // 빈칸 생성
-
+	void PlayGame();
 	//======
 	//단일 대상한테만 보내기 -> receive버튼, 타일 돌리기
 	void ResponseMessage(const CString& strMsg, CServiceSocket* pSender);
@@ -105,4 +105,7 @@ public:
 
 
 	CString m_strName;
+//	int m_intTurnPos;
+	afx_msg void OnBnClickedButtonPlay();
+	POSITION m_posTurn;
 };

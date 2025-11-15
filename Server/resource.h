@@ -19,6 +19,8 @@
 #define IDC_EDIT_NAME                   1006
 #define IDC_BUTTON_RECEIVE              1007
 #define IDC_IPADDRESS_IP                1007
+#define IDC_BUTTON_SetBack2             1008
+#define IDC_BUTTON_PLAY                 1008
 
 // Next default values for new objects
 // 
