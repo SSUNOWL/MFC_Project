@@ -89,6 +89,36 @@ void CClientSocket::OnReceive(int nErrorCode)
             else if (strType == _T("PLACE")) {
 
             }
+            else if (strType == _T("GetName")) {
+                CString strMsg;
+                CString Name = m_pClientDlg->m_strName;
+                strMsg.Format(_T("type:GetName|sender:%s|name:%s"), Name, Name);
+                m_pClientDlg->RequestMessage(strMsg);
+            }
+            else if (strType == _T("StartTile")) {
+                CString strPos, strTileid;
+                int nX, nY, nTileid;
+                if (messageMap.Lookup(_T("pos"), strPos)) {
+                    int comma_pos = strPos.Find(_T(","));
+                    CString sub;
+                    sub = strPos.Mid(0, comma_pos);
+                    strPos = strPos.Mid(comma_pos + 1);
+
+                    nX = _ttoi(sub);
+                    nY = _ttoi(strPos);
+                }
+                if (messageMap.Lookup(_T("tileid"), strTileid)) {
+                    nTileid = _ttoi(strTileid);
+                }
+                
+                m_pClientDlg->m_private_tile[nX][nY] = m_pClientDlg->ParseIdtoTile(nTileid);
+                // 로그 출력용
+                /*CString strMsg;
+                strMsg.Format(_T("%d %d %d"), nX, nY, nTileid);
+                m_pClientDlg->DisplayMessage(0, strMsg, 1);*/
+                //개인 타일판을 시각화하는 함수
+            
+            }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)
@@ -121,4 +151,3 @@ void CClientSocket::OnClose(int nErrorCode)
 
     CAsyncSocket::OnClose(nErrorCode);
 }
-
