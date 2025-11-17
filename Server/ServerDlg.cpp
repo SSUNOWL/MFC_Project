@@ -498,7 +498,8 @@ void CServerDlg::PlayGame() {
 	
 	ShuffleTiles();
 	//서버의 턴 시작
-	m_posTurn = m_clientSocketList.GetTailPosition();
+	m_posTurn = NULL;
+	m_bCurrentTurn = FALSE;
 	NextTurn();
 
 	for (int i = 1; i <= 14; i++) {
@@ -528,30 +529,34 @@ void CServerDlg::PlayGame() {
 
 void CServerDlg::NextTurn() {
 	CString strMsg;
+	CString strNext;
+	if (m_bCurrentTurn == TRUE) {
+		m_bCurrentTurn = FALSE;
+		m_posTurn = m_clientSocketList.GetHeadPosition();
+		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 
-	if (m_bCurrentTurn) {
-		POSITION m_posTurn = m_clientSocketList.GetHeadPosition();
-		CServiceSocket *pTurn = m_clientSocketList.GetAt(m_posTurn);
-		m_bCurrentTurn = false;
 		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
-
+			
+		strNext.Format(_T("type:StartTurn|sender:시스템"));
+		ResponseMessage(strNext, pTurn);
 	}
 	else {
-		//현재 차례가 list의 마지막 (다음턴이 서버)
-		if (m_posTurn == m_clientSocketList.GetTailPosition()) {
-			m_bCurrentTurn = true;
-			m_posTurn = 0;
+		if (m_posTurn == NULL) {
+			m_bCurrentTurn = TRUE;
+			m_posTurn = NULL;
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
+			//서버는 보낼필요 없음
 		}
-		//평시
 		else {
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
-			
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
 
+			strNext.Format(_T("type:StartTurn|sender:시스템"));
+			ResponseMessage(strNext, pTurn);
 		}
 	}
 	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
+	
 	DisplayMessage(_T("시스템"), strMsg, 1);
 
 }

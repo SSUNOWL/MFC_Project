@@ -106,7 +106,7 @@ BOOL CClientDlg::OnInitDialog()
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
 	m_strName = _T("익명");
-
+	m_bCurrentTurn = false;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -408,7 +408,10 @@ void CClientDlg::OnBnClickedButtonPass()
 
 	if (m_bCurrentTurn) {
 		//유효성 검증코드
-		//RequestMessage();
+		CString strMsg;
+		strMsg.Format(_T("type:EndTurn|sender:%s"), m_strName);
+		RequestMessage(strMsg);
+		m_bCurrentTurn = false;
 		//에 어떤 코드를 추가할지 생각하기
 	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
