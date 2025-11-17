@@ -79,4 +79,6 @@ public:
 	//-------------------
 	void RequestMessage(CString& strMsg);
 	CString m_strName;
+	bool m_bCurrentTurn;
+	afx_msg void OnBnClickedButtonPass();
 };

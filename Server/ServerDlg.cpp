@@ -106,6 +106,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
 	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
+	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnBnClickedButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -497,9 +498,8 @@ void CServerDlg::PlayGame() {
 	
 	ShuffleTiles();
 	//서버의 턴 시작
-	m_posTurn = 0;
-	m_bCurrentTurn = true;
-	
+	m_posTurn = m_clientSocketList.GetTailPosition();
+	NextTurn();
 
 	for (int i = 1; i <= 14; i++) {
 		m_private_tile[1][i] = m_rand_tile_list[m_deck_pos];
@@ -526,6 +526,36 @@ void CServerDlg::PlayGame() {
 
 }
 
+void CServerDlg::NextTurn() {
+	CString strMsg;
+
+	if (m_bCurrentTurn) {
+		POSITION m_posTurn = m_clientSocketList.GetHeadPosition();
+		CServiceSocket *pTurn = m_clientSocketList.GetAt(m_posTurn);
+		m_bCurrentTurn = false;
+		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+
+	}
+	else {
+		//현재 차례가 list의 마지막 (다음턴이 서버)
+		if (m_posTurn == m_clientSocketList.GetTailPosition()) {
+			m_bCurrentTurn = true;
+			m_posTurn = 0;
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
+		}
+		//평시
+		else {
+			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+			
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+
+		}
+	}
+	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
+	DisplayMessage(_T("시스템"), strMsg, 1);
+
+}
+
 void CServerDlg::OnBnClickedButtonReceive()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
@@ -538,5 +568,16 @@ void CServerDlg::OnBnClickedButtonReceive()
 void CServerDlg::OnBnClickedButtonPlay()
 {
 	PlayGame();
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}
+
+void CServerDlg::OnBnClickedButtonPass()
+{
+	if (m_bCurrentTurn == true) {
+		// 유효성 검증 코드 추가
+
+		NextTurn();
+
+	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }

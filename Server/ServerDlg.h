@@ -97,6 +97,7 @@ public:
 	static Tile    MakeJoker();       // 조커 생성
 	static Tile    MakeEmpty();       // 빈칸 생성
 	void PlayGame();
+	void NextTurn();
 	//======
 	//단일 대상한테만 보내기 -> receive버튼, 타일 돌리기
 	void ResponseMessage(const CString& strMsg, CServiceSocket* pSender);
@@ -109,4 +110,5 @@ public:
 	afx_msg void OnBnClickedButtonPlay();
 	POSITION m_posTurn;
 	bool m_bCurrentTurn;
+	afx_msg void OnBnClickedButtonPass();
 };

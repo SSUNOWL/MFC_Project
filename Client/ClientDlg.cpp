@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON_CONNECT, &CClientDlg::OnBnClickedButtonConnect)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
+	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -401,4 +402,14 @@ Tile CClientDlg::ParseIdtoTile(int Tileid) {
 		newTile = Tile{ c, Tileid % 26 + 1, false, Tileid };
 	}
 	return newTile;
+}
+void CClientDlg::OnBnClickedButtonPass()
+{
+
+	if (m_bCurrentTurn) {
+		//유효성 검증코드
+		//RequestMessage();
+		//에 어떤 코드를 추가할지 생각하기
+	}
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
