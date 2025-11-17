@@ -145,6 +145,7 @@ BOOL CServerDlg::OnInitDialog()
 
 	m_strName = _T("서버");
 	InitTiles();
+	m_bisGameStarted = FALSE;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -572,7 +573,16 @@ void CServerDlg::OnBnClickedButtonReceive()
 
 void CServerDlg::OnBnClickedButtonPlay()
 {
-	PlayGame();
+	if (m_clientSocketList.GetCount() < 1) {
+		AfxMessageBox(_T("다른 플레이어를 기다려야합니다."), MB_OK | MB_ICONWARNING);
+
+	}
+	else {
+		if (!m_bisGameStarted) {
+			PlayGame();
+			m_bisGameStarted = TRUE;
+		}
+	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
 

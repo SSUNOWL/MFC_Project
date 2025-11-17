@@ -111,4 +111,5 @@ public:
 	POSITION m_posTurn;
 	bool m_bCurrentTurn;
 	afx_msg void OnBnClickedButtonPass();
+	bool m_bisGameStarted;
 };
