@@ -494,10 +494,11 @@ void CServerDlg::ShuffleTiles() {
 void CServerDlg::PlayGame() { 
 	// 유저 정보 요청해서 다 받음.
 	//게임 시작할때 필요되는 초기화 과정 전부 여기서 진행
-
-	ShuffleTiles();
 	
-	//턴 초기화하면 아마도 이거임
+	ShuffleTiles();
+	//서버의 턴 시작
+	m_posTurn = 0;
+	m_bCurrentTurn = true;
 	
 
 	for (int i = 1; i <= 14; i++) {

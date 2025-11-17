@@ -108,4 +108,5 @@ public:
 //	int m_intTurnPos;
 	afx_msg void OnBnClickedButtonPlay();
 	POSITION m_posTurn;
+	bool m_bCurrentTurn;
 };
