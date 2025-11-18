@@ -69,6 +69,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_CONNECT, &CClientDlg::OnBnClickedButtonConnect)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
+	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
 END_MESSAGE_MAP()
 
 
@@ -415,4 +416,15 @@ void CClientDlg::OnBnClickedButtonPass()
 		//에 어떤 코드를 추가할지 생각하기
 	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}
+
+
+void CClientDlg::OnBnClickedButtonReceive()
+{
+	if (m_bCurrentTurn) {
+		CString strMsg;
+		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
+		RequestMessage(strMsg);
+		m_bCurrentTurn = false;
+	}
 }

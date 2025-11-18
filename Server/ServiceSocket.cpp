@@ -115,7 +115,7 @@ void CServiceSocket::OnReceive(int nErrorCode)
                 m_pServerDlg->NextTurn();
 
             }
-            else if (strType == _T("RECEIVE")) {
+            else if (strType == _T("Receive")) {
 
             }
         }
