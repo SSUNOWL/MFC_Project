@@ -117,7 +117,20 @@ void CClientSocket::OnReceive(int nErrorCode)
                 strMsg.Format(_T("%d %d %d"), nX, nY, nTileid);
                 m_pClientDlg->DisplayMessage(0, strMsg, 1);*/
                 //개인 타일판을 시각화하는 함수
-            
+            }
+            else if (strType == _T("StartTurn")) {
+                m_pClientDlg->m_bCurrentTurn = true;
+            }
+            else if (strType == _T("Accept")) {
+                CString name, strNum;
+                int nNum;
+                if (messageMap.Lookup(_T("name"), name));
+                if (messageMap.Lookup(_T("num"), strNum)) {
+                    nNum = _ttoi(strNum) + 1;
+                }
+                CString strMsg;
+                strMsg.Format(_T("%s님이 입장하였습니다. 현재 %d명"), name, nNum);
+                m_pClientDlg->DisplayMessage(_T("시스템"), strMsg, true);
             }
         }
     }

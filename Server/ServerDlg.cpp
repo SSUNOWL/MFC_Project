@@ -106,6 +106,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
 	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
+	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnBnClickedButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -144,6 +145,7 @@ BOOL CServerDlg::OnInitDialog()
 
 	m_strName = _T("서버");
 	InitTiles();
+	m_bisGameStarted = FALSE;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -494,11 +496,12 @@ void CServerDlg::ShuffleTiles() {
 void CServerDlg::PlayGame() { 
 	// 유저 정보 요청해서 다 받음.
 	//게임 시작할때 필요되는 초기화 과정 전부 여기서 진행
-
+	
 	ShuffleTiles();
-	
-	//턴 초기화하면 아마도 이거임
-	
+	//서버의 턴 시작
+	m_posTurn = NULL;
+	m_bCurrentTurn = FALSE;
+	NextTurn();
 
 	for (int i = 1; i <= 14; i++) {
 		m_private_tile[1][i] = m_rand_tile_list[m_deck_pos];
@@ -525,6 +528,40 @@ void CServerDlg::PlayGame() {
 
 }
 
+void CServerDlg::NextTurn() {
+	CString strMsg;
+	CString strNext;
+	if (m_bCurrentTurn == TRUE) {
+		m_bCurrentTurn = FALSE;
+		m_posTurn = m_clientSocketList.GetHeadPosition();
+		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+
+		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+			
+		strNext.Format(_T("type:StartTurn|sender:시스템"));
+		ResponseMessage(strNext, pTurn);
+	}
+	else {
+		if (m_posTurn == NULL) {
+			m_bCurrentTurn = TRUE;
+			m_posTurn = NULL;
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
+			//서버는 보낼필요 없음
+		}
+		else {
+			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+
+			strNext.Format(_T("type:StartTurn|sender:시스템"));
+			ResponseMessage(strNext, pTurn);
+		}
+	}
+	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
+	
+	DisplayMessage(_T("시스템"), strMsg, 1);
+
+}
+
 void CServerDlg::OnBnClickedButtonReceive()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
@@ -536,6 +573,26 @@ void CServerDlg::OnBnClickedButtonReceive()
 
 void CServerDlg::OnBnClickedButtonPlay()
 {
-	PlayGame();
+	if (m_clientSocketList.GetCount() < 1) {
+		AfxMessageBox(_T("다른 플레이어를 기다려야합니다."), MB_OK | MB_ICONWARNING);
+
+	}
+	else {
+		if (!m_bisGameStarted) {
+			PlayGame();
+			m_bisGameStarted = TRUE;
+		}
+	}
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}
+
+void CServerDlg::OnBnClickedButtonPass()
+{
+	if (m_bCurrentTurn == true) {
+		// 유효성 검증 코드 추가
+
+		NextTurn();
+
+	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
