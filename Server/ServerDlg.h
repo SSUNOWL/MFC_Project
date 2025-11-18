@@ -74,7 +74,7 @@ public:
 		Color color;
 		int num;
 		bool isJoker;
-		int tileId;
+		int tileId=0;
 
 	};
 	// === [게임 상태: 서버 권위] ===
