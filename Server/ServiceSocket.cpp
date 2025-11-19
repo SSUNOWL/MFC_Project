@@ -122,6 +122,7 @@ void CServiceSocket::OnReceive(int nErrorCode)
                 tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
                 strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
                 m_pServerDlg->ResponseMessage(strMsg,pTurn);
+                m_pServerDlg->NextTurn();
             }
         }
     }
