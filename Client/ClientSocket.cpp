@@ -132,7 +132,7 @@ void CClientSocket::OnReceive(int nErrorCode)
                 strMsg.Format(_T("%s님이 입장하였습니다. 현재 %d명"), name, nNum);
                 m_pClientDlg->DisplayMessage(_T("시스템"), strMsg, true);
             }
-            else if (strType == _T("Receive")) {
+            else if (strType == _T("ReceiveTile")) {
                 CString strPos, strTileid;
                 int nTileid;
                 
