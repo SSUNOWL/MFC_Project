@@ -116,7 +116,12 @@ void CServiceSocket::OnReceive(int nErrorCode)
 
             }
             else if (strType == _T("Receive")) {
-
+                POSITION m_posTurn = m_pServerDlg->m_clientSocketList.GetHeadPosition();
+                CServiceSocket* pTurn = m_pServerDlg->m_clientSocketList.GetNext(m_posTurn);
+                CString strMsg; int tileid;
+                tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
+                strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
+                m_pServerDlg->ResponseMessage(strMsg,pTurn);
             }
         }
     }
