@@ -150,6 +150,7 @@ BOOL CServerDlg::OnInitDialog()
 	m_strName = _T("서버");
 	InitTiles();
 	m_bisGameStarted = FALSE;
+	m_intPrivateTileNum = 0;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -548,13 +549,14 @@ void CServerDlg::NextTurn() {
 	else {
 		if (m_posTurn == NULL) {
 			m_bCurrentTurn = TRUE;
-			m_posTurn = NULL;
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
 			//서버는 보낼필요 없음
 		}
 		else {
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+
+			AfxMessageBox(_T("턴이 서버로 넘어왔습니다.", MB_OK));
 
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
@@ -772,13 +774,14 @@ bool CServerDlg::IsGroupValid(std::list<Tile> tileChunk)
 	return true;
 }
 
-void CServerDlg::OnClickedButtonPass()
+void CServerDlg::OnBnClickedButtonPass()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
-	if (m_bCurrentTurn == true) {
-		// 유효성 검증 코드 추가
-		NextTurn();
+	if (!m_bCurrentTurn) {
+		AfxMessageBox(_T("턴이 돌아오지 않았습니다.", MB_OK));
+
+		return;
 	}
 
 	if (IsPublicTileValid()) // 공용판이 올바른 경우
@@ -789,7 +792,7 @@ void CServerDlg::OnClickedButtonPass()
 		BroadcastMessage(requestMsg, 0);
 
 		// 턴 종료
-
+		NextTurn();
 	}
 	else // 공용판이 올바르지 않은 경우
 	{

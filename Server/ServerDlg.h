@@ -113,12 +113,9 @@ public:
 	bool m_bisGameStarted;
 	afx_msg void OnBnClickedButtonPass();
 	bool IsPublicTileValid();
-public:
-	afx_msg void OnClickedButtonPass();
 	int m_intPrivateTileNum;
 private:
 	bool IsRowValid(int);
-private:
 	bool IsRunValid(std::list<Tile> tileChunk);
 	bool IsGroupValid(std::list<Tile> tileChunk);
 };

@@ -72,6 +72,8 @@ void CServiceSocket::OnReceive(int nErrorCode)
         CString strMessage = UTF8ToCString(utf8_data);
         CStringToStringMap messageMap;
         ParseMessageToMap(strMessage, messageMap);
+
+
         //  1. 서버 로그에 메시지 수신 사실 기록
         if (m_pServerDlg)
         {
@@ -79,6 +81,7 @@ void CServiceSocket::OnReceive(int nErrorCode)
             CString strType, strSender;
             if (messageMap.Lookup(_T("type"), strType));
             if (messageMap.Lookup(_T("sender"), strSender));
+
             //  2. 대화 상자에 브로드캐스트 요청 (메시지 내용과 이 소켓 객체를 보냄)
             if (strType == _T("CHAT")) {
                 CString strSend;
