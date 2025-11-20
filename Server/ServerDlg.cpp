@@ -599,7 +599,7 @@ void CServerDlg::OnBnClickedButtonPass()
 		// 유효성 검증 코드 추가
 
 		NextTurn();
-
+	}
 }
 
 void CServerDlg::LoadImage()
