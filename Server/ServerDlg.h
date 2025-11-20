@@ -6,6 +6,7 @@
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
 #include <array>
+#include <list>
 
 #include <algorithm>
 
@@ -56,7 +57,6 @@ public:
 	void AddLog(const CString& strMsg);
 	void DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived);
 	CEdit m_edit_send;
-//	CListBox m_list_Message;
 	CListBox m_list_message;
 	afx_msg void OnBnClickedButtonReceive();
 
@@ -115,14 +115,18 @@ public:
 
 
 	CString m_strName;
-//	int m_intTurnPos;
+	//	int m_intTurnPos;
 	afx_msg void OnBnClickedButtonPlay();
 	POSITION m_posTurn;
 	bool m_bCurrentTurn;
-	afx_msg void OnBnClickedButtonPass();
 	bool m_bisGameStarted;
-
+	afx_msg void OnBnClickedButtonPass();
+	bool IsPublicTileValid();
+	int m_intPrivateTileNum;
 private:
+	bool IsRowValid(int);
+	bool IsRunValid(std::list<Tile> tileChunk);
+	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
 	int  GetTileImageIndex(const Tile& tile) const;
 };

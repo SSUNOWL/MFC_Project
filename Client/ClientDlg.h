@@ -5,6 +5,7 @@
 #pragma once
 #include "ClientSocket.h"
 #include <vector>
+#include <list>
 
 enum Color {
 	RED,
@@ -81,5 +82,11 @@ public:
 	CString m_strName;
 	bool m_bCurrentTurn;
 	afx_msg void OnBnClickedButtonPass();
+	bool IsPublicTileValid();
+	int m_intPrivateTileNum;
 	afx_msg void OnBnClickedButtonReceive();
+private:
+	bool IsRowValid(int);
+	bool IsRunValid(std::list<Tile> tileChunk);
+	bool IsGroupValid(std::list<Tile> tileChunk);
 };
