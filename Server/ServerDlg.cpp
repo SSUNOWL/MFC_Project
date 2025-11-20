@@ -525,9 +525,6 @@ void CServerDlg::PlayGame() {
 			CString strMsg;
 			strMsg.Format(_T("type:StartTile|sender:%s|pos:%d,%d|tileid:%d"), m_strName, 1, i, m_rand_tile_list[m_deck_pos].tileId);
 			ResponseMessage(strMsg, pSocket);
-			CString strres;
-			strres.Format(_T("type:CHAT|sender:%s|content:%s"), m_strName, _T("테스트옹"));
-			ResponseMessage(strres, pSocket);
 			m_deck_pos++;
 		}
 	}

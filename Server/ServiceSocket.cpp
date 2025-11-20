@@ -164,10 +164,8 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
         CString strType, strSender;
         if (messageMap.Lookup(_T("type"), strType));
         if (messageMap.Lookup(_T("sender"), strSender));
-
         // 2. 대화 상자에 브로드캐스트 요청 (메시지 내용과 이 소켓 객체를 보냄)
         // ... (CHAT, PLACE, GetName, EndTurn, Receive 등 모든 타입별 분기 로직) ...
-
         if (strType == _T("CHAT")) {
             CString strSend;
             if (messageMap.Lookup(_T("content"), strSend));
@@ -175,14 +173,9 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pServerDlg->BroadcastMessage(strMessage, this);
         }
         else if (strType == _T("PLACE")) {
-
-
-
         }
-
         else if (strType == _T("GetName")) {
             messageMap.Lookup(_T("name"), m_strName);
-
             CString strLog;
             strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
             m_pServerDlg->AddLog(strLog);
@@ -192,7 +185,6 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             CString strChat;
             strChat.Format(_T("%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
             m_pServerDlg->DisplayMessage(_T("시스템"), strChat, 1);
-
             // 다른 플레이어들에게 전달
 
         }
@@ -203,19 +195,12 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
         }
 
         else if (strType == _T("Receive")) {
-
             POSITION m_posTurn = m_pServerDlg->m_clientSocketList.GetHeadPosition();
-
             CServiceSocket* pTurn = m_pServerDlg->m_clientSocketList.GetNext(m_posTurn);
-
             CString strMsg; int tileid;
-
             tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
-
             strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
-
             m_pServerDlg->ResponseMessage(strMsg, pTurn);
-
             m_pServerDlg->NextTurn();
 
         }
