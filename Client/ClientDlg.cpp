@@ -109,6 +109,8 @@ BOOL CClientDlg::OnInitDialog()
 
 	m_strName = _T("익명");
 	m_bCurrentTurn = false;
+	LoadImage();
+
 	m_intPrivateTileNum = 0;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -426,7 +428,7 @@ Tile CClientDlg::ParseIdtoTile(int Tileid) {
 		default: break;
 		}
 
-		newTile = Tile{ c, Tileid % 26 + 1, false, Tileid };
+		newTile = Tile{ c, (Tileid % 26) % 13 + 1, false, Tileid };
 	}
 	return newTile;
 }
