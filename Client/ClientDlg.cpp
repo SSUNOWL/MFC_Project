@@ -234,6 +234,9 @@ void CClientDlg::OnPaint()
 			dc.MoveTo(105 + 35 * i, 555);
 			dc.LineTo(105 + 35 * i, 555 + 35 * 3);
 		}
+
+		DrawMyTiles(dc);
+
 		CDialogEx::OnPaint();
 
 
@@ -651,6 +654,8 @@ void CClientDlg::OnBnClickedButtonPass()
 	{
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
 	}
+
+	Invalidate(FALSE);
 }
 
 
@@ -661,6 +666,166 @@ void CClientDlg::OnBnClickedButtonReceive()
 		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
 		RequestMessage(strMsg);
 		m_bCurrentTurn = false;
+	}
+
+	Invalidate(FALSE);
+}
+
+
+void CClientDlg::LoadImage()
+{
+	int j = 0;
+
+	// 1) 빨강 타일 (0~12, 13~25)
+	for (int i = 0; i < 13; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 2) 파랑 타일 (26~38, 39~51)
+	for (int i = 26; i < 39; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 3) 노랑 타일 (52~64, 65~77)
+	for (int i = 52; i < 65; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 4) 초록 타일 (78~90, 91~103)
+	for (int i = 78; i < 91; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 조커 2장 (104, 105)
+	LoadPngFromResource(m_tile_image_list[104], IDB_PNG2);
+	LoadPngFromResource(m_tile_image_list[105], IDB_PNG1);
+}
+
+bool CClientDlg::LoadPngFromResource(CImage& img, UINT uResID)
+{
+	HINSTANCE hInst = AfxGetInstanceHandle();
+
+	// 리소스 찾기 (타입 "PNG")
+	HRSRC hRes = ::FindResource(hInst, MAKEINTRESOURCE(uResID), L"PNG");
+	if (!hRes) return false;
+
+	DWORD size = ::SizeofResource(hInst, hRes);
+	if (size == 0) return false;
+
+	HGLOBAL hGlobal = ::LoadResource(hInst, hRes);
+	if (!hGlobal) return false;
+
+	void* pData = ::LockResource(hGlobal);
+	if (!pData) return false;
+
+	// 메모리 복사해서 IStream 만들기
+	HGLOBAL hBuffer = ::GlobalAlloc(GMEM_MOVEABLE, size);
+	if (!hBuffer) return false;
+
+	void* pBuffer = ::GlobalLock(hBuffer);
+	memcpy(pBuffer, pData, size);
+	::GlobalUnlock(hBuffer);
+
+	IStream* pStream = nullptr;
+	if (FAILED(::CreateStreamOnHGlobal(hBuffer, TRUE, &pStream)))
+	{
+		::GlobalFree(hBuffer);
+		return false;
+	}
+
+	img.Destroy(); // 혹시 이전 이미지 있으면 정리
+	HRESULT hr = img.Load(pStream);
+
+	pStream->Release(); // hBuffer도 같이 해제됨
+
+	return SUCCEEDED(hr);
+}
+
+int CClientDlg::GetTileImageIndex(const Tile& tile) const
+{
+	// 조커
+	if (tile.isJoker)
+	{
+		// 두 장이 모양 같으면 그냥 104로 통일해도 되고,
+		// tileId 짝/홀로 104/105 번갈아 써도 됨
+		return (tile.tileId % 2 == 0) ? 104 : 105;
+	}
+
+	// RED ~ BLACK 이 연속 enum이라고 가정
+	int colorIndex = static_cast<int>(tile.color) - static_cast<int>(RED);
+	if (colorIndex < 0 || colorIndex > 3)
+		return -1; // BLACK 일반 타일 같은 건 없음
+
+	int numIndex = tile.num - 1;   // 1~13 -> 0~12
+	if (numIndex < 0 || numIndex >= 13)
+		return -1;
+
+	// 각 색당 26칸(같은 숫자 2장)이니까 첫 번째 장만 사용
+	// RED : 0~25, BLUE : 26~51, ... 순서로 LoadImage에서 채워놨다고 가정
+	int base = colorIndex * 26;
+
+	return base + numIndex;   // 첫 번째 세트만 사용 (0~90 범위)
+}
+
+void CClientDlg::DrawMyTiles(CDC& dc)
+{
+	// 공통 상수
+	const int CELL_SIZE = 35;
+	const int TILE_DRAW_SIZE = 30;
+	const int OFFSET = (CELL_SIZE - TILE_DRAW_SIZE) / 2;
+
+	// === 공용판 그리기 ===
+	const int PUBLIC_START_X = 35;
+	const int PUBLIC_START_Y = 35;
+
+	for (int row = 1; row <= 13; ++row)
+	{
+		for (int col = 1; col <= 27; ++col)
+		{
+			const Tile& t = m_public_tile[row][col];
+
+			// 빈 타일 스킵 (BLACK, 0, false)
+			if (t.color == BLACK && t.num == 0 && !t.isJoker)
+				continue;
+
+			int imgIndex = GetTileImageIndex(t);
+			if (imgIndex < 0) continue;
+			if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+			int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
+			int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+
+			m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
+		}
+	}
+
+	// === 개인판 그리기 ===
+	const int PRIVATE_START_X = 105;
+	const int PRIVATE_START_Y = 555;
+
+	for (int row = 1; row <= 3; ++row)
+	{
+		for (int col = 1; col <= 17; ++col)
+		{
+			const Tile& t = m_private_tile[row][col];
+
+			// 빈 타일 스킵 (BLACK, 0, false)
+			if (t.color == BLACK && t.num == 0 && !t.isJoker)
+				continue;
+
+			int imgIndex = GetTileImageIndex(t);
+			if (imgIndex < 0) continue;
+			if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+			int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
+			int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+
+			m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
+		}
 	}
 }
 
