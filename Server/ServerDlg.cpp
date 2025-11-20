@@ -378,41 +378,41 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 		AddLog(strLog);
 	}
 }
-
-//pSender를 제외한 클라이언트에게 전달
 void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender)
 {
-	//  전송을 위한 CString -> LPCSTR 변환 준비
 	USES_CONVERSION;
 
-	// 1. 연결된 클라이언트 목록 순회
 	POSITION pos = m_clientSocketList.GetHeadPosition();
 
-	// 2. 서버 로그에 브로드캐스트 사실 기록
+	std::string utf8_data = CStringToUTF8(strMsg);
+	// 1. 메시지 길이를 4바이트 정수형으로 준비합니다. (루프 밖에서 한 번만 계산)
+	int nLength = (int)utf8_data.length();
+
+	// 2. 서버 로그 기록
 	CString strLog;
-	
+	strLog.Format(_T("BROADCAST: %s"), strMsg);
+	AddLog(strLog);
 
 	while (pos != NULL)
 	{
 		CServiceSocket* pSocket = m_clientSocketList.GetNext(pos);
 
-		// 유효한 소켓인지 확인하고, 연결 상태인지 확인합니다.
 		if (pSocket && pSocket->m_hSocket != NULL && pSocket->IsConnected())
 		{
-			// (선택 사항) 메시지를 보낸 클라이언트에게는 다시 보내지 않으려면 아래 주석 해제
-			 if (pSocket == pSender) continue;
+			// 메시지를 보낸 클라이언트 제외
+			if (pSocket == pSender) continue;
 
-			//  3. 메시지 전송 (Send 함수 사용
-			 std::string utf8_data = CStringToUTF8(strMsg);
-			 strLog.Format(_T("BROADCAST: %s"), strMsg);
-			 AddLog(strLog);
-			 // 2. 소켓을 통해 서버로 데이터 전송
-			 // CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
-			 int nBytesSent = pSocket->Send(utf8_data.c_str(), (int)utf8_data.length()); //  
+			// 3. **[수정]** 길이 헤더 (4바이트)를 먼저 전송합니다.
+			int nHeaderSent = pSocket->Send(&nLength, sizeof(nLength));
+
+			// 4. **[수정]** 실제 메시지 본문 (Payload)을 전송합니다.
+			int nDataSent = pSocket->Send(utf8_data.c_str(), nLength);
+
 			// 전송 오류 처리
-			if (nBytesSent == SOCKET_ERROR)
+			if (nHeaderSent != sizeof(nLength) || nDataSent != nLength)
 			{
 				// 오류가 발생하면 해당 소켓의 연결을 강제로 끊거나 로그를 남길 수 있습니다.
+				// AddLog(_T("ERROR: Broadcast 전송 실패."));
 				pSocket->Close();
 			}
 		}
@@ -420,38 +420,35 @@ void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender
 }
 
 
-
-
 void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender) {
-	//  전송을 위한 CString -> LPCSTR 변환 준비
 	USES_CONVERSION;
 
-	// 1. 연결된 클라이언트 목록 순회
-	POSITION pos = m_clientSocketList.GetHeadPosition();
-
-	// 2. 서버 로그에 브로드캐스트 사실 기록
-	CString strLog;
-
-	// 유효한 소켓인지 확인하고, 연결 상태인지 확인합니다.
 	if (pSender && pSender->m_hSocket != NULL && pSender->IsConnected())
 	{
-		// (선택 사항) 메시지를 보낸 클라이언트에게는 다시 보내지 않으려면 아래 주석 해제
-
-		//  3. 메시지 전송 (Send 함수 사용
 		std::string utf8_data = CStringToUTF8(strMsg);
-		strLog.Format(_T("BROADCAST: %s"), strMsg);
+
+		// 1. 메시지 길이를 4바이트 정수형으로 준비합니다.
+		int nLength = (int)utf8_data.length();
+
+		// 2. 서버 로그 기록
+		CString strLog;
+		strLog.Format(_T("RESPONSE: %s (To: %s)"), strMsg, pSender->m_strName);
 		AddLog(strLog);
-		// 2. 소켓을 통해 서버로 데이터 전송
-		// CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
-		int nBytesSent = pSender->Send(utf8_data.c_str(), (int)utf8_data.length()); //  
+
+		// 3. **[수정]** 길이 헤더 (4바이트)를 먼저 전송합니다.
+		int nHeaderSent = pSender->Send(&nLength, sizeof(nLength));
+
+		// 4. **[수정]** 실제 메시지 본문 (Payload)을 전송합니다.
+		int nDataSent = pSender->Send(utf8_data.c_str(), nLength);
+
 		// 전송 오류 처리
-		if (nBytesSent == SOCKET_ERROR)
+		if (nHeaderSent != sizeof(nLength) || nDataSent != nLength)
 		{
 			// 오류가 발생하면 해당 소켓의 연결을 강제로 끊거나 로그를 남길 수 있습니다.
+			// AddLog(_T("ERROR: Response 전송 실패."));
 			pSender->Close();
 		}
 	}
-
 }
 
 
@@ -528,6 +525,9 @@ void CServerDlg::PlayGame() {
 			CString strMsg;
 			strMsg.Format(_T("type:StartTile|sender:%s|pos:%d,%d|tileid:%d"), m_strName, 1, i, m_rand_tile_list[m_deck_pos].tileId);
 			ResponseMessage(strMsg, pSocket);
+			CString strres;
+			strres.Format(_T("type:CHAT|sender:%s|content:%s"), m_strName, _T("테스트옹"));
+			ResponseMessage(strres, pSocket);
 			m_deck_pos++;
 		}
 	}
