@@ -57,84 +57,167 @@ void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
     }
     // 함수 끝에서 return이 필요 없습니다.
 }
-
 void CServiceSocket::OnReceive(int nErrorCode)
 {
-    char buffer[1024];
-    // 버퍼 크기보다 1 작게 받아 NULL 문자를 위한 공간 확보
-    int nRecv = Receive(buffer, sizeof(buffer) - 1);
+    char tempBuffer[1024];
+    // 현재 소켓 버퍼에서 읽을 수 있는 만큼 최대 1024 바이트를 읽습니다.
+    int nRecv = Receive(tempBuffer, sizeof(tempBuffer));
 
     if (nRecv > 0)
     {
-        buffer[nRecv] = '\0';
-        std::string utf8_data(buffer, nRecv);
+        // 1. 받은 데이터를 누적 버퍼(m_recvBuffer)에 추가합니다.
+        m_recvBuffer.insert(m_recvBuffer.end(), tempBuffer, tempBuffer + nRecv);
 
-        CString strMessage = UTF8ToCString(utf8_data);
-        CStringToStringMap messageMap;
-        ParseMessageToMap(strMessage, messageMap);
-
-
-        //  1. 서버 로그에 메시지 수신 사실 기록
-        if (m_pServerDlg)
+        // 2. 누적 버퍼에서 완전한 메시지를 추출하는 루프를 시작합니다.
+        while (true)
         {
-            m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
-            CString strType, strSender;
-            if (messageMap.Lookup(_T("type"), strType));
-            if (messageMap.Lookup(_T("sender"), strSender));
-
-            //  2. 대화 상자에 브로드캐스트 요청 (메시지 내용과 이 소켓 객체를 보냄)
-            if (strType == _T("CHAT")) {
-                CString strSend;
-                if (messageMap.Lookup(_T("content"), strSend));
-
-                m_pServerDlg->DisplayMessage(strSender, strSend, TRUE);
-                CString strMsg;
-
-                m_pServerDlg->BroadcastMessage(strMessage, this);
-                
+            // A. 아직 길이 헤더(4바이트)를 읽을 수 없는 상태라면 루프 종료
+            if (m_recvBuffer.size() < sizeof(int))
+            {
+                break;
             }
-            else if (strType == _T("PLACE")) {
 
+            // B. 메시지 길이(m_nextMessageSize)가 아직 결정되지 않았다면 헤더를 읽습니다.
+            if (m_nextMessageSize == 0)
+            {
+                // 버퍼의 앞 4바이트를 int(메시지 길이)로 해석합니다.
+                // reinterpret_cast<int*>를 사용할 때는 정렬(alignment) 문제가 발생할 수 있으므로, 
+                // 안전하게 memcpy를 사용하거나, char 배열을 int로 복사하는 것이 좋습니다.
+                int nLength = 0;
+                std::memcpy(&nLength, m_recvBuffer.data(), sizeof(int));
+                m_nextMessageSize = static_cast<size_t>(nLength);
+
+                // 길이 값의 유효성 검증
+                if (m_nextMessageSize <= 0 || m_nextMessageSize > MAX_MESSAGE_SIZE)
+                {
+                    // 비정상적인 길이: 연결 종료 처리 후 루프 종료
+                    m_nextMessageSize = 0;
+                    // m_pServerDlg->AddLog(_T("ERROR: Invalid message length. Closing connection."));
+                    OnClose(nErrorCode);
+                    return; // 함수 종료
+                }
             }
-            else if (strType == _T("GetName")) {
 
-                messageMap.Lookup(_T("name"), m_strName );
+            // C. 메시지 본문(Payload) 데이터가 충분히 모였는지 확인합니다.
+            // (누적된 전체 크기 - 헤더 크기) >= 메시지 본문 길이
+            size_t payload_size = m_recvBuffer.size() - sizeof(int);
 
-                CString strLog;
-                strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
-                m_pServerDlg->AddLog(strLog);
-                CString strMsg;
-                strMsg.Format(_T("type:Accept|sender:서버|name:%s|num:%d"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount());
-                m_pServerDlg->BroadcastMessage(strMsg, 0); 
-                CString strChat;
-                strChat.Format(_T("%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
-                m_pServerDlg->DisplayMessage(_T("시스템"), strChat, 1);
-                // 다른 플레이어들에게 전달
+            if (payload_size >= m_nextMessageSize)
+            {
+                // **완전한 하나의 메시지가 도착했습니다!**
 
+                // 헤더(4바이트)를 건너뛰고 메시지 본문을 추출합니다.
+                const char* message_start = m_recvBuffer.data() + sizeof(int);
+
+                // 추출한 메시지 본문을 string으로 변환 후 처리 함수 호출
+                std::string utf8_data(message_start, m_nextMessageSize);
+                ProcessExtractedMessage(utf8_data);
+
+                // 처리한 헤더와 메시지 본문만큼 누적 버퍼에서 제거합니다. (핵심!)
+                size_t total_processed_size = sizeof(int) + m_nextMessageSize;
+                m_recvBuffer.erase(m_recvBuffer.begin(),
+                    m_recvBuffer.begin() + total_processed_size);
+
+                // 다음 메시지 처리를 위해 상태 초기화
+                m_nextMessageSize = 0;
             }
-            else if (strType == _T("EndTurn")) {
-                // pass, receive시 턴을 끝내주세요~~ 라는 뜻
-                
-                m_pServerDlg->NextTurn();
-
-            }
-            else if (strType == _T("Receive")) {
-                POSITION m_posTurn = m_pServerDlg->m_clientSocketList.GetHeadPosition();
-                CServiceSocket* pTurn = m_pServerDlg->m_clientSocketList.GetNext(m_posTurn);
-                CString strMsg; int tileid;
-                tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
-                strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
-                m_pServerDlg->ResponseMessage(strMsg,pTurn);
-                m_pServerDlg->NextTurn();
+            else
+            {
+                // 아직 메시지 본문이 완전히 도착하지 않았습니다. 다음 OnReceive를 기다립니다.
+                break;
             }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)
     {
-        // 연결이 정상 종료되거나 오류가 발생하면 OnClose를 호출하여 정리
+        // 연결 종료 처리
         OnClose(nErrorCode);
         return;
     }
 
     CAsyncSocket::OnReceive(nErrorCode);
+}
+
+
+
+
+void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
+{
+    // 1. 기존 OnReceive에서 메시지를 처리하던 로직을 이곳으로 가져옵니다.
+    // 참고: std::string to CString 변환 및 Map 파싱 함수가 필요합니다.
+
+    // CString strMessage = UTF8ToCString(utf8_data); // 가정: 이 함수는 정의되어 있음
+
+    // **주의: UTF-8 to CString 변환 로직은 직접 정의하셔야 합니다.
+    // 여기서는 예시로 기존 로직을 따릅니다.**
+
+    //---------------------------------------------------------
+    // 아래 코드는 기존 OnReceive의 핵심 로직입니다.
+    CString strMessage = UTF8ToCString(utf8_data);
+    CStringToStringMap messageMap;
+    ParseMessageToMap(strMessage, messageMap);
+
+    // 1. 서버 로그에 메시지 수신 사실 기록
+    if (m_pServerDlg)
+    {
+        m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
+        CString strType, strSender;
+        if (messageMap.Lookup(_T("type"), strType));
+        if (messageMap.Lookup(_T("sender"), strSender));
+
+        // 2. 대화 상자에 브로드캐스트 요청 (메시지 내용과 이 소켓 객체를 보냄)
+        // ... (CHAT, PLACE, GetName, EndTurn, Receive 등 모든 타입별 분기 로직) ...
+
+        if (strType == _T("CHAT")) {
+            CString strSend;
+            if (messageMap.Lookup(_T("content"), strSend));
+            m_pServerDlg->DisplayMessage(strSender, strSend, TRUE);
+            m_pServerDlg->BroadcastMessage(strMessage, this);
+        }
+        else if (strType == _T("PLACE")) {
+
+
+
+        }
+
+        else if (strType == _T("GetName")) {
+            messageMap.Lookup(_T("name"), m_strName);
+
+            CString strLog;
+            strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
+            m_pServerDlg->AddLog(strLog);
+            CString strMsg;
+            strMsg.Format(_T("type:Accept|sender:서버|name:%s|num:%d"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount());
+            m_pServerDlg->BroadcastMessage(strMsg, 0);
+            CString strChat;
+            strChat.Format(_T("%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
+            m_pServerDlg->DisplayMessage(_T("시스템"), strChat, 1);
+
+            // 다른 플레이어들에게 전달
+
+        }
+
+        else if (strType == _T("EndTurn")) {
+            // pass, receive시 턴을 끝내주세요~~ 라는 
+            m_pServerDlg->NextTurn();
+        }
+
+        else if (strType == _T("Receive")) {
+
+            POSITION m_posTurn = m_pServerDlg->m_clientSocketList.GetHeadPosition();
+
+            CServiceSocket* pTurn = m_pServerDlg->m_clientSocketList.GetNext(m_posTurn);
+
+            CString strMsg; int tileid;
+
+            tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
+
+            strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
+
+            m_pServerDlg->ResponseMessage(strMsg, pTurn);
+
+            m_pServerDlg->NextTurn();
+
+        }
+    }
 }
