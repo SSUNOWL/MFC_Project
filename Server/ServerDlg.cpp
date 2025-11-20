@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <chrono>
 #include <random>
+#include <atlimage.h>
+#include <comdef.h>
 #include <list>
 
 
@@ -150,7 +152,10 @@ BOOL CServerDlg::OnInitDialog()
 	m_strName = _T("서버");
 	InitTiles();
 	m_bisGameStarted = FALSE;
+	LoadImage();
+	ShuffleTiles();
 	m_intPrivateTileNum = 0;
+
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -219,6 +224,9 @@ void CServerDlg::OnPaint()
 			dc.MoveTo(105 + 35 * i, 555);
 			dc.LineTo(105 + 35 * i, 555 + 35 * 3);
 		}
+
+		DrawMyTiles(dc);
+
 		CDialogEx::OnPaint();
 
 
@@ -567,15 +575,31 @@ void CServerDlg::NextTurn() {
 	DisplayMessage(_T("시스템"), strMsg, 1);
 
 }
+void CServerDlg::Receive() {
+	bool received = false;
+	for (int i = 1; i <= 3; i++) {
+		for (int j = 1; j <= 17; j++)
+			if (m_private_tile[i][j].tileId == -1) { // 비어있는 공간에 패를 넣기 위해서 조건 검사
+				m_private_tile[i][j] = m_rand_tile_list[m_deck_pos++];
+				CString strLog;
+				strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[i][j].color, m_private_tile[i][j].num, m_private_tile[i][j].tileId, i, j);
+				AddLog(strLog);
+				received = true;
+				break;
+			}
+		if (received == true)
+			break;
+	}
+}
 
-void CServerDlg::OnBnClickedButtonReceive()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-
-	// 시작 전 판을 변경 전으로 돌리는 SetBack 실행
-	//CString strMsg;
-	//strMsg.Format(_T("type:RECEIVE|sender:%s"), m_strName);
-	//ResponseMessage(strMsg,); // 이건 client에서
+void CServerDlg::OnBnClickedButtonReceive() {
+	
+	if (m_bCurrentTurn == true) {
+		//Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
+		Receive(); // 패 한장 받기
+		NextTurn(); // 다음 차례로 넘기기
+	}
+	
 }
 
 bool CServerDlg::IsPublicTileValid()
@@ -806,7 +830,6 @@ void CServerDlg::OnBnClickedButtonPlay()
 {
 	if (m_clientSocketList.GetCount() < 1) {
 		AfxMessageBox(_T("다른 플레이어를 기다려야합니다."), MB_OK | MB_ICONWARNING);
-
 	}
 	else {
 		if (!m_bisGameStarted) {
@@ -816,3 +839,135 @@ void CServerDlg::OnBnClickedButtonPlay()
 	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
+
+
+void CServerDlg::LoadImage()
+{
+	int j = 0;
+
+	// 1) 빨강 타일 (0~12, 13~25)
+	for (int i = 0; i < 13; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 2) 파랑 타일 (26~38, 39~51)
+	for (int i = 26; i < 39; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 3) 노랑 타일 (52~64, 65~77)
+	for (int i = 52; i < 65; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 4) 초록 타일 (78~90, 91~103)
+	for (int i = 78; i < 91; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 조커 2장 (104, 105)
+	LoadPngFromResource(m_tile_image_list[104], IDB_PNG2);
+	LoadPngFromResource(m_tile_image_list[105], IDB_PNG1);
+}
+
+bool CServerDlg::LoadPngFromResource(CImage& img, UINT uResID)
+{
+	HINSTANCE hInst = AfxGetInstanceHandle();
+
+	// 리소스 찾기 (타입 "PNG")
+	HRSRC hRes = ::FindResource(hInst, MAKEINTRESOURCE(uResID), L"PNG");
+	if (!hRes) return false;
+
+	DWORD size = ::SizeofResource(hInst, hRes);
+	if (size == 0) return false;
+
+	HGLOBAL hGlobal = ::LoadResource(hInst, hRes);
+	if (!hGlobal) return false;
+
+	void* pData = ::LockResource(hGlobal);
+	if (!pData) return false;
+
+	// 메모리 복사해서 IStream 만들기
+	HGLOBAL hBuffer = ::GlobalAlloc(GMEM_MOVEABLE, size);
+	if (!hBuffer) return false;
+
+	void* pBuffer = ::GlobalLock(hBuffer);
+	memcpy(pBuffer, pData, size);
+	::GlobalUnlock(hBuffer);
+
+	IStream* pStream = nullptr;
+	if (FAILED(::CreateStreamOnHGlobal(hBuffer, TRUE, &pStream)))
+	{
+		::GlobalFree(hBuffer);
+		return false;
+	}
+
+	img.Destroy(); // 혹시 이전 이미지 있으면 정리
+	HRESULT hr = img.Load(pStream);
+
+	pStream->Release(); // hBuffer도 같이 해제됨
+
+	return SUCCEEDED(hr);
+}
+
+int CServerDlg::GetTileImageIndex(const Tile& tile) const
+{
+	// 조커
+	if (tile.isJoker)
+	{
+		// 두 장이 모양 같으면 그냥 104로 통일해도 되고,
+		// tileId 짝/홀로 104/105 번갈아 써도 됨
+		return (tile.tileId % 2 == 0) ? 104 : 105;
+	}
+
+	// RED ~ BLACK 이 연속 enum이라고 가정
+	int colorIndex = static_cast<int>(tile.color) - static_cast<int>(RED);
+	if (colorIndex < 0 || colorIndex > 3)
+		return -1; // BLACK 일반 타일 같은 건 없음
+
+	int numIndex = tile.num - 1;   // 1~13 -> 0~12
+	if (numIndex < 0 || numIndex >= 13)
+		return -1;
+
+	// 각 색당 26칸(같은 숫자 2장)이니까 첫 번째 장만 사용
+	// RED : 0~25, BLUE : 26~51, ... 순서로 LoadImage에서 채워놨다고 가정
+	int base = colorIndex * 26;
+
+	return base + numIndex;   // 첫 번째 세트만 사용 (0~90 범위)
+}
+void CServerDlg::DrawMyTiles(CDC& dc)
+{
+	// 개인판 그리드 기준 좌표 (네 코드랑 맞춤)
+	const int CELL_SIZE = 35;
+	const int START_X = 105;   // 개인판 왼쪽 위
+	const int START_Y = 555;
+	const int TILE_DRAW_SIZE = 30;    // 실제 그림 크기 (칸보다 살짝 작게)
+	const int OFFSET = (CELL_SIZE - TILE_DRAW_SIZE) / 2;
+
+	// 일단 테스트로 "손패 14장"만 첫 번째 줄에 그려보자
+	const int HAND_COUNT = 14;
+
+	for (int i = 0; i < HAND_COUNT; ++i)
+	{
+		// 섞인 타일 목록에서 앞쪽 HAND_COUNT장 사용
+		const Tile& t = m_tile_list[i];   // 필요하면 m_rand_tile_list로 바꿔도 됨
+
+		int imgIndex = GetTileImageIndex(t);
+		if (imgIndex < 0) continue;
+		if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+		int col = i;      // 0번째 타일 -> 0열, 1번째 -> 1열 ...
+		int row = 0;      // 개인판 첫 줄 (위쪽 줄에만 배치)
+
+		// 칸 안에서 살짝 여백 주고 중앙정렬
+		int drawX = START_X + col * CELL_SIZE + OFFSET;
+		int drawY = START_Y + row * CELL_SIZE + OFFSET;
+
+		m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
+	}
+}
+

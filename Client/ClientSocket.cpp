@@ -132,6 +132,26 @@ void CClientSocket::OnReceive(int nErrorCode)
                 strMsg.Format(_T("%s님이 입장하였습니다. 현재 %d명"), name, nNum);
                 m_pClientDlg->DisplayMessage(_T("시스템"), strMsg, true);
             }
+            else if (strType == _T("ReceiveTile")) {
+                CString strPos, strTileid;
+                int nTileid;
+                
+                if (messageMap.Lookup(_T("tileid"), strTileid)) {
+                    nTileid = _ttoi(strTileid);
+                }
+                bool received = false;
+                for (int i = 1; i <= 3; i++) {
+                    for (int j = 1; j <= 17; j++) {
+                        if (m_pClientDlg->m_private_tile[i][j].tileId == -1) {
+                            m_pClientDlg->m_private_tile[i][j] = m_pClientDlg->ParseIdtoTile(nTileid);
+                            received = true;
+                            break;
+                        }
+                    }
+                    if (received == true)
+                        break;
+                }
+            }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)

@@ -70,6 +70,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_CONNECT, &CClientDlg::OnBnClickedButtonConnect)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
+	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
 END_MESSAGE_MAP()
 
 
@@ -629,5 +630,16 @@ void CClientDlg::OnBnClickedButtonPass()
 	else // 공용판이 올바르지 않은 경우
 	{
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
+	}
+}
+
+
+void CClientDlg::OnBnClickedButtonReceive()
+{
+	if (m_bCurrentTurn) {
+		CString strMsg;
+		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
+		RequestMessage(strMsg);
+		m_bCurrentTurn = false;
 	}
 }
