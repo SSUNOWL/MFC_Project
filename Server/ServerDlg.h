@@ -123,7 +123,6 @@ public:
 	afx_msg void OnBnClickedButtonPass();
 	bool IsPublicTileValid();
 	int m_intPrivateTileNum;
-	bool m_bisGameStarted;
 private:
 	bool IsRowValid(int);
 	bool IsRunValid(std::list<Tile> tileChunk);
