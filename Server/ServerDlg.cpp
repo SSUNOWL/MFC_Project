@@ -194,12 +194,9 @@ void CServerDlg::OnPaint()
 
 		// 아이콘을 그립니다.
 		dc.DrawIcon(x, y, m_hIcon);
-
 	}
 	else
 	{
-
-
 		CPaintDC dc(this); 
 
 		CPen line_pen(PS_DOT, 1, RGB(80, 80, 80));
@@ -228,8 +225,6 @@ void CServerDlg::OnPaint()
 		DrawMyTiles(dc);
 
 		CDialogEx::OnPaint();
-
-
 	}
 }
 
@@ -939,35 +934,62 @@ int CServerDlg::GetTileImageIndex(const Tile& tile) const
 
 	return base + numIndex;   // 첫 번째 세트만 사용 (0~90 범위)
 }
+
 void CServerDlg::DrawMyTiles(CDC& dc)
 {
-	// 개인판 그리드 기준 좌표 (네 코드랑 맞춤)
+	// 공통 상수
 	const int CELL_SIZE = 35;
-	const int START_X = 105;   // 개인판 왼쪽 위
-	const int START_Y = 555;
-	const int TILE_DRAW_SIZE = 30;    // 실제 그림 크기 (칸보다 살짝 작게)
+	const int TILE_DRAW_SIZE = 30;
 	const int OFFSET = (CELL_SIZE - TILE_DRAW_SIZE) / 2;
 
-	// 일단 테스트로 "손패 14장"만 첫 번째 줄에 그려보자
-	const int HAND_COUNT = 14;
+	// === 공용판 그리기 ===
+	const int PUBLIC_START_X = 35;
+	const int PUBLIC_START_Y = 35;
 
-	for (int i = 0; i < HAND_COUNT; ++i)
+	for (int row = 1; row <= 13; ++row)
 	{
-		// 섞인 타일 목록에서 앞쪽 HAND_COUNT장 사용
-		const Tile& t = m_tile_list[i];   // 필요하면 m_rand_tile_list로 바꿔도 됨
+		for (int col = 1; col <= 27; ++col)
+		{
+			const Tile& t = m_public_tile[row][col];
 
-		int imgIndex = GetTileImageIndex(t);
-		if (imgIndex < 0) continue;
-		if (m_tile_image_list[imgIndex].IsNull()) continue;
+			// 빈 타일 스킵 (BLACK, 0, false)
+			if (t.color == BLACK && t.num == 0 && !t.isJoker)
+				continue;
 
-		int col = i;      // 0번째 타일 -> 0열, 1번째 -> 1열 ...
-		int row = 0;      // 개인판 첫 줄 (위쪽 줄에만 배치)
+			int imgIndex = GetTileImageIndex(t);
+			if (imgIndex < 0) continue;
+			if (m_tile_image_list[imgIndex].IsNull()) continue;
 
-		// 칸 안에서 살짝 여백 주고 중앙정렬
-		int drawX = START_X + col * CELL_SIZE + OFFSET;
-		int drawY = START_Y + row * CELL_SIZE + OFFSET;
+			int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
+			int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
 
-		m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
+			m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
+		}
+	}
+
+	// === 개인판 그리기 ===
+	const int PRIVATE_START_X = 105;
+	const int PRIVATE_START_Y = 555;
+
+	for (int row = 1; row <= 3; ++row)
+	{
+		for (int col = 1; col <= 17; ++col)
+		{
+			const Tile& t = m_private_tile[row][col];
+
+			// 빈 타일 스킵 (BLACK, 0, false)
+			if (t.color == BLACK && t.num == 0 && !t.isJoker)
+				continue;
+
+			int imgIndex = GetTileImageIndex(t);
+			if (imgIndex < 0) continue;
+			if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+			int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
+			int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+
+			m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
+		}
 	}
 }
 
