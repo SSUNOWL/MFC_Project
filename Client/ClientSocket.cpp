@@ -35,7 +35,7 @@ void CClientSocket::OnConnect(int nErrorCode)
 typedef CMap<CString, LPCTSTR, CString, LPCTSTR> CStringToStringMap;
 void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
 {
-    // CMap 객체 생성 코드를 제거하고, 매개변수 mapResult를 바로 사용합니다.
+
     CString strToken;
     int nPos = 0;
 
@@ -57,73 +57,62 @@ void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
         }
         strToken = strMessage.Tokenize(_T("|"), nPos);
     }
-    // 함수 끝에서 return이 필요 없습니다.
+
 }
 
 void CClientSocket::OnReceive(int nErrorCode)
 {
-    char buffer[1024];
-    int nRecv = Receive(buffer, sizeof(buffer) - 1); // Receive 함수 사용
+    char tempBuffer[1024];
+    int nRecv = Receive(tempBuffer, sizeof(tempBuffer));
 
     if (nRecv > 0)
     {
-
-
-        std::string utf8_data(buffer, nRecv);
-
-        CString strMessage = UTF8ToCString(utf8_data);
-        CStringToStringMap messageMap;
-        CString strType, strSender;
-        ParseMessageToMap(strMessage, messageMap);
-        if (messageMap.Lookup(_T("type"), strType));
-        if (messageMap.Lookup(_T("sender"), strSender));
-        // 대화 상자 함수를 호출하여 메시지를 UI에 출력
-        if (m_pClientDlg)
+        m_recvBuffer.insert(m_recvBuffer.end(), tempBuffer, tempBuffer + nRecv);
+        while (true)
         {
-            if (strType == _T("CHAT")) {
-                CString strSend;
-                if (messageMap.Lookup(_T("content"), strSend));
-
-                m_pClientDlg->DisplayMessage(strSender, strSend, TRUE);
+            if (m_recvBuffer.size() < sizeof(int))
+            {
+                break;
             }
-            else if (strType == _T("PLACE")) {
-
-            }
-            else if (strType == _T("GetName")) {
-                CString strMsg;
-                CString Name = m_pClientDlg->m_strName;
-                strMsg.Format(_T("type:GetName|sender:%s|name:%s"), Name, Name);
-                m_pClientDlg->RequestMessage(strMsg);
-            }
-            else if (strType == _T("StartTile")) {
-                CString strPos, strTileid;
-                int nX, nY, nTileid;
-                if (messageMap.Lookup(_T("pos"), strPos)) {
-                    int comma_pos = strPos.Find(_T(","));
-                    CString sub;
-                    sub = strPos.Mid(0, comma_pos);
-                    strPos = strPos.Mid(comma_pos + 1);
-
-                    nX = _ttoi(sub);
-                    nY = _ttoi(strPos);
-                }
-                if (messageMap.Lookup(_T("tileid"), strTileid)) {
-                    nTileid = _ttoi(strTileid);
-                }
-                
-                m_pClientDlg->m_private_tile[nX][nY] = m_pClientDlg->ParseIdtoTile(nTileid);
-                // 로그 출력용
-                /*CString strMsg;
-                strMsg.Format(_T("%d %d %d"), nX, nY, nTileid);
-                m_pClientDlg->DisplayMessage(0, strMsg, 1);*/
-                //개인 타일판을 시각화하는 함수
             
+            if (m_nextMessageSize == 0)
+            {
+                int nLength = 0;
+            
+                std::memcpy(&nLength, m_recvBuffer.data(), sizeof(int));
+                m_nextMessageSize = static_cast<size_t>(nLength);
+
+                if (m_nextMessageSize <= 0 || m_nextMessageSize > MAX_MESSAGE_SIZE)
+                {
+                    m_nextMessageSize = 0;
+                    OnClose(nErrorCode);
+                    return;
+                }
+            }
+
+            
+            size_t payload_size = m_recvBuffer.size() - sizeof(int);
+
+            if (payload_size >= m_nextMessageSize)
+            {
+                const char* message_start = m_recvBuffer.data() + sizeof(int);
+                std::string utf8_data(message_start, m_nextMessageSize);
+                ProcessExtractedMessage(utf8_data); 
+                size_t total_processed_size = sizeof(int) + m_nextMessageSize;
+                m_recvBuffer.erase(m_recvBuffer.begin(),
+                m_recvBuffer.begin() + total_processed_size);
+
+                m_nextMessageSize = 0;
+            }
+            else
+            {
+
+                break;
             }
         }
     }
     else if (nRecv == 0 || nErrorCode != 0)
     {
-        // 연결이 정상적으로 종료되었거나 오류 발생
         OnClose(nErrorCode);
         return;
     }
@@ -142,12 +131,94 @@ void CClientSocket::OnClose(int nErrorCode)
         CString strLog;
         strLog.Format(_T("INFO: 서버와의 연결이 끊어졌습니다. (에러코드: %d)"), nErrorCode);
         m_pClientDlg->m_static_status.SetWindowText(strLog);
-
-        // CClientDlg의 소켓 포인터를 정리할 수 있도록 요청
-        // CClientDlg::OnCloseSocket(this) 같은 함수를 호출하여 처리합니다.
-        // 현재는 CClientDlg::OnBnClickedButtonConnect에서 정리하도록 가정합니다.
     }
-
-
     CAsyncSocket::OnClose(nErrorCode);
+}
+
+
+void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
+{
+
+    CString strMessage = UTF8ToCString(utf8_data);
+    CStringToStringMap messageMap;
+    ParseMessageToMap(strMessage, messageMap);
+
+    CString strType, strSender;
+    if (messageMap.Lookup(_T("type"), strType));
+    if (messageMap.Lookup(_T("sender"), strSender));
+
+    if (m_pClientDlg)
+    {
+        if (strType == _T("CHAT")) {
+            CString strSend;
+            if (messageMap.Lookup(_T("content"), strSend));
+            m_pClientDlg->DisplayMessage(strSender, strSend, TRUE);
+        }
+        else if (strType == _T("PLACE")) {
+        }
+        else if (strType == _T("GetName")) {
+            CString strMsg;
+            CString Name = m_pClientDlg->m_strName;
+            strMsg.Format(_T("type:GetName|sender:%s|name:%s"), Name, Name);
+            m_pClientDlg->RequestMessage(strMsg);
+        }
+        else if (strType == _T("StartTile")) {
+            CString strPos, strTileid;
+            int nX, nY, nTileid;
+            if (messageMap.Lookup(_T("pos"), strPos)) {
+                int comma_pos = strPos.Find(_T(","));
+                CString sub;
+                sub = strPos.Mid(0, comma_pos);
+                strPos = strPos.Mid(comma_pos + 1);
+                nX = _ttoi(sub);
+                nY = _ttoi(strPos);
+            }
+            if (messageMap.Lookup(_T("tileid"), strTileid)) {
+                nTileid = _ttoi(strTileid);
+            }
+
+            m_pClientDlg->m_private_tile[nX][nY] = m_pClientDlg->ParseIdtoTile(nTileid);
+            // 로그 출력용
+            CString strMsg;
+            strMsg.Format(_T("%d %d"), nTileid,  m_pClientDlg->m_private_tile[nX][nY].tileId);
+            m_pClientDlg->DisplayMessage(0, strMsg, 1);
+            //개인 타일판을 시각화하는 함수
+            m_pClientDlg->Invalidate(FALSE);
+        }
+        else if (strType == _T("StartTurn")) {
+            m_pClientDlg->m_bCurrentTurn = true;
+        }
+        else if (strType == _T("Accept")) {
+            CString name, strNum;
+            int nNum;
+            if (messageMap.Lookup(_T("name"), name));
+            if (messageMap.Lookup(_T("num"), strNum)) {
+                nNum = _ttoi(strNum) + 1;
+            }
+            CString strMsg;
+            strMsg.Format(_T("%s님이 입장하였습니다. 현재 %d명"), name, nNum);
+            m_pClientDlg->DisplayMessage(_T("시스템"), strMsg, true);
+        }
+        else if (strType == _T("ReceiveTile")) {
+            CString strPos, strTileid;
+            int nTileid;
+
+            if (messageMap.Lookup(_T("tileid"), strTileid)) {
+                nTileid = _ttoi(strTileid);
+            }
+            bool received = false;
+            for (int i = 1; i <= 3; i++) {
+                for (int j = 1; j <= 17; j++) {
+                    if (m_pClientDlg->m_private_tile[i][j].tileId == -1) {
+                        m_pClientDlg->m_private_tile[i][j] = m_pClientDlg->ParseIdtoTile(nTileid);
+                        received = true;
+                        break;
+                    }
+                }
+                if (received == true)
+                    break;
+            }
+            m_pClientDlg->Invalidate(FALSE);
+        }
+    }
 }

@@ -13,6 +13,9 @@
 #include <algorithm>
 #include <chrono>
 #include <random>
+#include <atlimage.h>
+#include <comdef.h>
+#include <list>
 
 
 #ifdef _DEBUG
@@ -38,6 +41,8 @@ public:
 // 구현입니다.
 protected:
 	DECLARE_MESSAGE_MAP()
+public:
+//	afx_msg void OnButtonPass();
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
@@ -50,6 +55,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+//	ON_COMMAND(IDC_BUTTON_PASS, &CAboutDlg::OnButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -106,6 +112,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
 	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
+	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnBnClickedButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -144,6 +151,11 @@ BOOL CServerDlg::OnInitDialog()
 
 	m_strName = _T("서버");
 	InitTiles();
+	m_bisGameStarted = FALSE;
+	LoadImage();
+	ShuffleTiles();
+	m_intPrivateTileNum = 0;
+
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -182,12 +194,9 @@ void CServerDlg::OnPaint()
 
 		// 아이콘을 그립니다.
 		dc.DrawIcon(x, y, m_hIcon);
-
 	}
 	else
 	{
-
-
 		CPaintDC dc(this); 
 
 		CPen line_pen(PS_DOT, 1, RGB(80, 80, 80));
@@ -212,9 +221,10 @@ void CServerDlg::OnPaint()
 			dc.MoveTo(105 + 35 * i, 555);
 			dc.LineTo(105 + 35 * i, 555 + 35 * 3);
 		}
+
+		DrawMyTiles(dc);
+
 		CDialogEx::OnPaint();
-
-
 	}
 }
 
@@ -368,41 +378,41 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 		AddLog(strLog);
 	}
 }
-
-//pSender를 제외한 클라이언트에게 전달
 void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender)
 {
-	//  전송을 위한 CString -> LPCSTR 변환 준비
 	USES_CONVERSION;
 
-	// 1. 연결된 클라이언트 목록 순회
 	POSITION pos = m_clientSocketList.GetHeadPosition();
 
-	// 2. 서버 로그에 브로드캐스트 사실 기록
+	std::string utf8_data = CStringToUTF8(strMsg);
+	// 1. 메시지 길이를 4바이트 정수형으로 준비합니다. (루프 밖에서 한 번만 계산)
+	int nLength = (int)utf8_data.length();
+
+	// 2. 서버 로그 기록
 	CString strLog;
-	
+	strLog.Format(_T("BROADCAST: %s"), strMsg);
+	AddLog(strLog);
 
 	while (pos != NULL)
 	{
 		CServiceSocket* pSocket = m_clientSocketList.GetNext(pos);
 
-		// 유효한 소켓인지 확인하고, 연결 상태인지 확인합니다.
 		if (pSocket && pSocket->m_hSocket != NULL && pSocket->IsConnected())
 		{
-			// (선택 사항) 메시지를 보낸 클라이언트에게는 다시 보내지 않으려면 아래 주석 해제
-			 if (pSocket == pSender) continue;
+			// 메시지를 보낸 클라이언트 제외
+			if (pSocket == pSender) continue;
 
-			//  3. 메시지 전송 (Send 함수 사용
-			 std::string utf8_data = CStringToUTF8(strMsg);
-			 strLog.Format(_T("BROADCAST: %s"), strMsg);
-			 AddLog(strLog);
-			 // 2. 소켓을 통해 서버로 데이터 전송
-			 // CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
-			 int nBytesSent = pSocket->Send(utf8_data.c_str(), (int)utf8_data.length()); //  
+			// 3. **[수정]** 길이 헤더 (4바이트)를 먼저 전송합니다.
+			int nHeaderSent = pSocket->Send(&nLength, sizeof(nLength));
+
+			// 4. **[수정]** 실제 메시지 본문 (Payload)을 전송합니다.
+			int nDataSent = pSocket->Send(utf8_data.c_str(), nLength);
+
 			// 전송 오류 처리
-			if (nBytesSent == SOCKET_ERROR)
+			if (nHeaderSent != sizeof(nLength) || nDataSent != nLength)
 			{
 				// 오류가 발생하면 해당 소켓의 연결을 강제로 끊거나 로그를 남길 수 있습니다.
+				// AddLog(_T("ERROR: Broadcast 전송 실패."));
 				pSocket->Close();
 			}
 		}
@@ -410,38 +420,35 @@ void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender
 }
 
 
-
-
 void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender) {
-	//  전송을 위한 CString -> LPCSTR 변환 준비
 	USES_CONVERSION;
 
-	// 1. 연결된 클라이언트 목록 순회
-	POSITION pos = m_clientSocketList.GetHeadPosition();
-
-	// 2. 서버 로그에 브로드캐스트 사실 기록
-	CString strLog;
-
-	// 유효한 소켓인지 확인하고, 연결 상태인지 확인합니다.
 	if (pSender && pSender->m_hSocket != NULL && pSender->IsConnected())
 	{
-		// (선택 사항) 메시지를 보낸 클라이언트에게는 다시 보내지 않으려면 아래 주석 해제
-
-		//  3. 메시지 전송 (Send 함수 사용
 		std::string utf8_data = CStringToUTF8(strMsg);
-		strLog.Format(_T("BROADCAST: %s"), strMsg);
+
+		// 1. 메시지 길이를 4바이트 정수형으로 준비합니다.
+		int nLength = (int)utf8_data.length();
+
+		// 2. 서버 로그 기록
+		CString strLog;
+		strLog.Format(_T("RESPONSE: %s (To: %s)"), strMsg, pSender->m_strName);
 		AddLog(strLog);
-		// 2. 소켓을 통해 서버로 데이터 전송
-		// CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
-		int nBytesSent = pSender->Send(utf8_data.c_str(), (int)utf8_data.length()); //  
+
+		// 3. **[수정]** 길이 헤더 (4바이트)를 먼저 전송합니다.
+		int nHeaderSent = pSender->Send(&nLength, sizeof(nLength));
+
+		// 4. **[수정]** 실제 메시지 본문 (Payload)을 전송합니다.
+		int nDataSent = pSender->Send(utf8_data.c_str(), nLength);
+
 		// 전송 오류 처리
-		if (nBytesSent == SOCKET_ERROR)
+		if (nHeaderSent != sizeof(nLength) || nDataSent != nLength)
 		{
 			// 오류가 발생하면 해당 소켓의 연결을 강제로 끊거나 로그를 남길 수 있습니다.
+			// AddLog(_T("ERROR: Response 전송 실패."));
 			pSender->Close();
 		}
 	}
-
 }
 
 
@@ -494,11 +501,12 @@ void CServerDlg::ShuffleTiles() {
 void CServerDlg::PlayGame() { 
 	// 유저 정보 요청해서 다 받음.
 	//게임 시작할때 필요되는 초기화 과정 전부 여기서 진행
-
+	
 	ShuffleTiles();
-	
-	//턴 초기화하면 아마도 이거임
-	
+	//서버의 턴 시작
+	m_posTurn = NULL;
+	m_bCurrentTurn = FALSE;
+	NextTurn();
 
 	for (int i = 1; i <= 14; i++) {
 		m_private_tile[1][i] = m_rand_tile_list[m_deck_pos];
@@ -525,15 +533,492 @@ void CServerDlg::PlayGame() {
 
 }
 
-void CServerDlg::OnBnClickedButtonReceive()
+void CServerDlg::NextTurn() {
+	CString strMsg;
+	CString strNext;
+	if (m_bCurrentTurn == TRUE) {
+		m_bCurrentTurn = FALSE;
+		m_posTurn = m_clientSocketList.GetHeadPosition();
+		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+
+		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+			
+		strNext.Format(_T("type:StartTurn|sender:시스템"));
+		ResponseMessage(strNext, pTurn);
+	}
+	else {
+		if (m_posTurn == NULL) {
+			m_bCurrentTurn = TRUE;
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
+			//서버는 보낼필요 없음
+		}
+		else {
+			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+
+			AfxMessageBox(_T("턴이 서버로 넘어왔습니다.", MB_OK));
+
+			strNext.Format(_T("type:StartTurn|sender:시스템"));
+			ResponseMessage(strNext, pTurn);
+		}
+	}
+	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
+	
+	DisplayMessage(_T("시스템"), strMsg, 1);
+
+}
+void CServerDlg::Receive() {
+	bool received = false;
+	for (int i = 1; i <= 3; i++) {
+		for (int j = 1; j <= 17; j++)
+			if (m_private_tile[i][j].tileId == -1) { // 비어있는 공간에 패를 넣기 위해서 조건 검사
+				m_private_tile[i][j] = m_rand_tile_list[m_deck_pos++];
+				CString strLog;
+				strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[i][j].color, m_private_tile[i][j].num, m_private_tile[i][j].tileId, i, j);
+				AddLog(strLog);
+				received = true;
+				break;
+			}
+		if (received == true)
+			break;
+	}
+}
+
+void CServerDlg::OnBnClickedButtonReceive() {
+	
+	if (m_bCurrentTurn == true) {
+		//Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
+		Receive(); // 패 한장 받기
+		NextTurn(); // 다음 차례로 넘기기
+	}
+	Invalidate(FALSE);
+}
+
+bool CServerDlg::IsPublicTileValid()
+{
+	/*
+	공용판이 올바른지 공용판의 각 행 별로 검사하는 메소드.
+	*/
+
+	for (int i = 1; i <= 13; i++) // 공용판의 각 행에 대해 반복
+	{
+		if (!IsRowValid(i))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool CServerDlg::IsRowValid(int row)
+{
+	/*
+	특정 행의 타일 조합들이 모두 유효한지 검사
+
+	런과 그룹은 다음과 같이 정의함
+	런(Run): 같은 색의 연속된 숫자 (예: 빨강 3-4-5)
+	그룹(Group): 같은 숫자의 다른 색 (예: 빨강7, 파랑7, 검정7)
+
+	청크(chunk)는 행에서 인접한 타일들의 묶음으로, 조건 검사의 단위임
+	*/
+	std::list<Tile> tileChunk; // 현재 검사 중인 타일 그룹
+
+	for (int i = 1; i <= 27; i++)
+	{
+		Tile currentTile = m_public_tile[row][i];
+
+		// 빈 칸을 만나거나 마지막 칸일 때, chunk가 비어있지 않은 경우(검사 필요)
+		if (((currentTile.num == 0) && (!currentTile.isJoker)) || (i == 27))
+		{
+			if (tileChunk.empty())
+			{
+				continue;
+			}
+
+			// chunk 검증
+			if (IsRunValid(tileChunk) || IsGroupValid(tileChunk))
+			{
+				tileChunk.clear();
+				continue;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// 타일을 그룹에 추가
+			tileChunk.push_back(currentTile);
+		}
+	}
+
+	return true;
+}
+
+bool CServerDlg::IsRunValid(std::list<Tile> tileChunk)
+{
+	/*
+	런(Run) 검사: 같은 색의 연속된 숫자
+	예: 빨강 3-4-5, 파랑 10-11-12-13
+	조커는 빠진 숫자를 대체 가능
+	*/
+
+	// 최소 3개 필요
+	if (tileChunk.size() < 3)
+	{
+		return false;
+	}
+
+	// 조커 개수 세기
+	int jokerCount = 0;
+	for (const Tile& t : tileChunk)
+	{
+		if (t.isJoker)
+		{
+			jokerCount++;
+		}
+	}
+
+	// 일반 타일의 색상 찾기 (기준 색상)
+	Color runColor = BLACK;
+	for (const Tile& t : tileChunk)
+	{
+		if (!t.isJoker)
+		{
+			runColor = t.color;
+			break;
+		}
+	}
+
+	// 연속된 숫자 검사
+	int expectedNum = -1;
+	bool firstTileSet = false;
+
+	for (const Tile& t : tileChunk)
+	{
+		if (t.isJoker)
+		{
+			// 조커는 다음 숫자로 간주
+			if (expectedNum != -1)
+			{
+				expectedNum++;
+			}
+			// 첫 타일이 조커면 다음 일반 타일로 숫자 결정(그냥 패스하면 됨)
+		}
+		else
+		{
+			// 색상 일치 확인
+			if (t.color != runColor)
+			{
+				return false;
+			}
+
+			// 첫 번째 일반 타일
+			if (!firstTileSet)
+			{
+				expectedNum = t.num;
+				firstTileSet = true;
+			}
+			else
+			{
+				// 숫자 연속성 확인
+				if (t.num != expectedNum)
+				{
+					return false;
+				}
+			}
+
+			expectedNum++;
+		}
+	}
+
+	return true;
+}
+
+bool CServerDlg::IsGroupValid(std::list<Tile> tileChunk)
+{
+	/*
+	그룹(Group) 검사: 같은 숫자의 다른 색
+	예: 빨강7, 파랑7, 검정7
+	조커는 부족한 색을 대체 가능
+	*/
+
+	// 최소 3개, 최대 4개 (4가지 색상)
+	if (tileChunk.size() < 3 || tileChunk.size() > 4)
+	{
+		return false;
+	}
+
+	// 일반 타일의 숫자 찾기 (기준 숫자)
+	int groupNum = -1;
+	for (const Tile& t : tileChunk)
+	{
+		if (!t.isJoker)
+		{
+			groupNum = t.num;
+			break;
+		}
+	}
+
+	// 색상 중복 체크 배열 (RED=0, GREEN=1, BLUE=2, BLACK=3)
+	bool usedColors[4] = { false, false, false, false };
+
+	for (const Tile& t : tileChunk)
+	{
+		// 조커는 색상 체크 건너뜀
+		if (t.isJoker)
+		{
+			continue;
+		}
+
+		// 숫자 일치 확인
+		if (t.num != groupNum)
+		{
+			return false;
+		}
+
+		// 색상 중복 확인
+		if (usedColors[t.color])
+		{
+			return false; // 같은 색 중복 불가
+		}
+		usedColors[t.color] = true;
+	}
+
+	return true;
+}
+
+void CServerDlg::OnBnClickedButtonPass()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
+	if (!m_bCurrentTurn) {
+		AfxMessageBox(_T("턴이 돌아오지 않았습니다.", MB_OK));
 
+		return;
+	}
+
+	if (IsPublicTileValid()) // 공용판이 올바른 경우
+	{
+		// 모든 클라이언트에 타일 개수 최신화 요청 전송
+		CString requestMsg;
+		requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
+		BroadcastMessage(requestMsg, 0);
+
+		// 턴 종료
+		NextTurn();
+	}
+	else // 공용판이 올바르지 않은 경우
+	{
+		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
+	}
+	Invalidate(FALSE);
 }
+
+
 
 void CServerDlg::OnBnClickedButtonPlay()
 {
-	PlayGame();
+	if (m_clientSocketList.GetCount() < 1) {
+		AfxMessageBox(_T("다른 플레이어를 기다려야합니다."), MB_OK | MB_ICONWARNING);
+	}
+	else {
+		if (!m_bisGameStarted) {
+			PlayGame();
+			m_bisGameStarted = TRUE;
+		}
+	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	Invalidate(FALSE);
+}
+
+
+void CServerDlg::LoadImage()
+{
+	int j = 0;
+
+	// 1) 빨강 타일 (0~12, 13~25)
+	for (int i = 0; i < 13; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 2) 파랑 타일 (26~38, 39~51)
+	for (int i = 26; i < 39; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 3) 노랑 타일 (52~64, 65~77)
+	for (int i = 52; i < 65; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 4) 초록 타일 (78~90, 91~103)
+	for (int i = 78; i < 91; i++, j++) {
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
+	}
+
+	// 조커 2장 (104, 105)
+	LoadPngFromResource(m_tile_image_list[104], IDB_PNG2);
+	LoadPngFromResource(m_tile_image_list[105], IDB_PNG1);
+}
+
+bool CServerDlg::LoadPngFromResource(CImage& img, UINT uResID)
+{
+	HINSTANCE hInst = AfxGetInstanceHandle();
+
+	// 리소스 찾기 (타입 "PNG")
+	HRSRC hRes = ::FindResource(hInst, MAKEINTRESOURCE(uResID), L"PNG");
+	if (!hRes) return false;
+
+	DWORD size = ::SizeofResource(hInst, hRes);
+	if (size == 0) return false;
+
+	HGLOBAL hGlobal = ::LoadResource(hInst, hRes);
+	if (!hGlobal) return false;
+
+	void* pData = ::LockResource(hGlobal);
+	if (!pData) return false;
+
+	// 메모리 복사해서 IStream 만들기
+	HGLOBAL hBuffer = ::GlobalAlloc(GMEM_MOVEABLE, size);
+	if (!hBuffer) return false;
+
+	void* pBuffer = ::GlobalLock(hBuffer);
+	memcpy(pBuffer, pData, size);
+	::GlobalUnlock(hBuffer);
+
+	IStream* pStream = nullptr;
+	if (FAILED(::CreateStreamOnHGlobal(hBuffer, TRUE, &pStream)))
+	{
+		::GlobalFree(hBuffer);
+		return false;
+	}
+
+	img.Destroy(); // 혹시 이전 이미지 있으면 정리
+	HRESULT hr = img.Load(pStream);
+
+	pStream->Release(); // hBuffer도 같이 해제됨
+
+	return SUCCEEDED(hr);
+}
+
+int CServerDlg::GetTileImageIndex(const Tile& tile) const
+{
+	// 조커
+	if (tile.isJoker)
+	{
+		// 두 장이 모양 같으면 그냥 104로 통일해도 되고,
+		// tileId 짝/홀로 104/105 번갈아 써도 됨
+		return (tile.tileId % 2 == 0) ? 104 : 105;
+	}
+
+	// RED ~ BLACK 이 연속 enum이라고 가정
+	int colorIndex = static_cast<int>(tile.color) - static_cast<int>(RED);
+	if (colorIndex < 0 || colorIndex > 3)
+		return -1; // BLACK 일반 타일 같은 건 없음
+
+	int numIndex = tile.num - 1;   // 1~13 -> 0~12
+	if (numIndex < 0 || numIndex >= 13)
+		return -1;
+
+	// 각 색당 26칸(같은 숫자 2장)이니까 첫 번째 장만 사용
+	// RED : 0~25, BLUE : 26~51, ... 순서로 LoadImage에서 채워놨다고 가정
+	int base = colorIndex * 26;
+
+	return base + numIndex;   // 첫 번째 세트만 사용 (0~90 범위)
+}
+
+void CServerDlg::DrawMyTiles(CDC& dc)
+{
+    // 공통 상수
+    const int CELL_SIZE      = 35;
+    const int TILE_DRAW_SIZE = 32;
+    const int OFFSET         = (CELL_SIZE - TILE_DRAW_SIZE) / 2 + 1;
+
+    // 실제 타일 내용 영역 크기 (여백 제외하고 쓰고 싶은 크기)
+    const int CONTENT_W = 68;
+    const int CONTENT_H = 68;
+
+    // === 공용판 그리기 ===
+    const int PUBLIC_START_X = 35;
+    const int PUBLIC_START_Y = 35;
+
+    for (int row = 1; row <= 13; ++row)
+    {
+        for (int col = 1; col <= 27; ++col)
+        {
+            const Tile& t = m_public_tile[row][col];
+
+            // 빈 타일 스킵 (BLACK, 0, false 기준)
+            if (t.color == BLACK && t.num == 0 && !t.isJoker)
+                continue;
+
+            int imgIndex = GetTileImageIndex(t);
+            if (imgIndex < 0) continue;
+            if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+            // 원본 이미지 크기
+            int imgW = m_tile_image_list[imgIndex].GetWidth();
+            int imgH = m_tile_image_list[imgIndex].GetHeight();
+
+            // 원본 중앙에서 68x68만 잘라오기
+            int srcW = min(CONTENT_W, imgW);
+            int srcH = min(CONTENT_H, imgH);
+            int srcX = max(0, (imgW - srcW) / 2 - 1);
+            int srcY = max(0, (imgH - srcH) / 2 - 1);
+
+            int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
+            int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+
+            // 잘라낸 영역(srcX,srcY,srcW,srcH)을 30x30으로 축소해서 셀 안에 그림
+            m_tile_image_list[imgIndex].Draw(
+                dc,
+                drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,  // 목적지(보드) 영역
+                srcX,  srcY,  srcW,            srcH            // 원본에서 자를 영역
+            );
+        }
+    }
+
+    // === 개인판 그리기 ===
+    const int PRIVATE_START_X = 105;
+    const int PRIVATE_START_Y = 555;
+
+    for (int row = 1; row <= 3; ++row)
+    {
+        for (int col = 1; col <= 17; ++col)
+        {
+            const Tile& t = m_private_tile[row][col];
+
+            // 빈 타일 스킵
+            if (t.color == BLACK && t.num == 0 && !t.isJoker)
+                continue;
+
+            int imgIndex = GetTileImageIndex(t);
+            if (imgIndex < 0) continue;
+            if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+            int imgW = m_tile_image_list[imgIndex].GetWidth();
+            int imgH = m_tile_image_list[imgIndex].GetHeight();
+
+            int srcW = min(CONTENT_W, imgW);
+            int srcH = min(CONTENT_H, imgH);
+            int srcX = max(0, (imgW - srcW) / 2);
+            int srcY = max(0, (imgH - srcH) / 2);
+
+            int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
+            int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+
+            m_tile_image_list[imgIndex].Draw(
+                dc,
+                drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,
+                srcX,  srcY,  srcW,            srcH
+            );
+        }
+    }
 }

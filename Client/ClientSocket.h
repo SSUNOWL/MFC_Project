@@ -2,7 +2,9 @@
 
 #pragma once
 #include <afxsock.h> // CAsyncSocket을 위해 필수
-
+#include <vector>
+#include <string>
+#define MAX_MESSAGE_SIZE (1024 * 1024)
 class CClientDlg; // CClientDlg 전방 선언 (순환 참조 방지)
 
 class CClientSocket : public CAsyncSocket
@@ -23,4 +25,7 @@ protected:
 private:
     CClientDlg* m_pClientDlg; // 대화 상자 포인터
     BOOL m_bConnected;
+    std::vector<char> m_recvBuffer;
+    size_t m_nextMessageSize = 0;
+    void ProcessExtractedMessage(const std::string& utf8_data);
 };

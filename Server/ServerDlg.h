@@ -6,6 +6,7 @@
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
 #include <array>
+#include <list>
 
 #include <algorithm>
 
@@ -56,7 +57,6 @@ public:
 	void AddLog(const CString& strMsg);
 	void DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived);
 	CEdit m_edit_send;
-//	CListBox m_list_Message;
 	CListBox m_list_message;
 	afx_msg void OnBnClickedButtonReceive();
 
@@ -74,7 +74,7 @@ public:
 		Color color;
 		int num;
 		bool isJoker;
-		int tileId;
+		int tileId=-1; // 나머지 1~106, 비어있는 판으로 표시하기 위해 -1로 초기화
 
 	};
 	// === [게임 상태: 서버 권위] ===
@@ -89,6 +89,9 @@ public:
 	Tile m_public_tile[14][28]{};
 	Tile m_private_tile[4][18]{};
 
+	CImage m_tile_image_list[106];
+
+
 	// === [유틸/로직] ===
 	void InitTiles();                 // 106장 생성
 	void ShuffleTiles();              // 셔플
@@ -97,6 +100,13 @@ public:
 	static Tile    MakeJoker();       // 조커 생성
 	static Tile    MakeEmpty();       // 빈칸 생성
 	void PlayGame();
+	void NextTurn();
+	void Receive();
+
+	void LoadImage();
+	bool LoadPngFromResource(CImage& img, UINT uResID);
+
+
 	//======
 	//단일 대상한테만 보내기 -> receive버튼, 타일 돌리기
 	void ResponseMessage(const CString& strMsg, CServiceSocket* pSender);
@@ -105,7 +115,18 @@ public:
 
 
 	CString m_strName;
-//	int m_intTurnPos;
+	//	int m_intTurnPos;
 	afx_msg void OnBnClickedButtonPlay();
 	POSITION m_posTurn;
+	bool m_bCurrentTurn;
+	bool m_bisGameStarted;
+	afx_msg void OnBnClickedButtonPass();
+	bool IsPublicTileValid();
+	int m_intPrivateTileNum;
+private:
+	bool IsRowValid(int);
+	bool IsRunValid(std::list<Tile> tileChunk);
+	bool IsGroupValid(std::list<Tile> tileChunk);
+	void DrawMyTiles(CDC& dc);
+	int  GetTileImageIndex(const Tile& tile) const;
 };
