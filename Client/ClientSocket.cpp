@@ -113,9 +113,9 @@ void CClientSocket::OnReceive(int nErrorCode)
                 
                 m_pClientDlg->m_private_tile[nX][nY] = m_pClientDlg->ParseIdtoTile(nTileid);
                 // 로그 출력용
-                /*CString strMsg;
+                CString strMsg;
                 strMsg.Format(_T("%d %d %d"), nX, nY, nTileid);
-                m_pClientDlg->DisplayMessage(0, strMsg, 1);*/
+                m_pClientDlg->DisplayMessage(0, strMsg, 1);
                 //개인 타일판을 시각화하는 함수
             }
             else if (strType == _T("StartTurn")) {

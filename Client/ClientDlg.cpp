@@ -409,6 +409,10 @@ void CClientDlg::OnBnClickedButtonPass()
 
 	if (m_bCurrentTurn) {
 		//유효성 검증코드
+		CString strreqeust;
+		strreqeust.Format(_T("type:CHAT|sender:%s|content:%s"), m_strName, _T("동시에 보내기"));
+		RequestMessage(strreqeust);
+
 		CString strMsg;
 		strMsg.Format(_T("type:EndTurn|sender:%s"), m_strName);
 		RequestMessage(strMsg);

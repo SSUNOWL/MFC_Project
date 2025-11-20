@@ -625,31 +625,31 @@ void CServerDlg::LoadImage()
 
 	// 1) 빨강 타일 (0~12, 13~25)
 	for (int i = 0; i < 13; i++, j++) {
-		LoadPngFromResource(m_tile_image_list[i], IDB_PNG1 + j);
-		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG1 + j);
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
 	}
 
 	// 2) 파랑 타일 (26~38, 39~51)
 	for (int i = 26; i < 39; i++, j++) {
-		LoadPngFromResource(m_tile_image_list[i], IDB_PNG1 + j);
-		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG1 + j);
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
 	}
 
 	// 3) 노랑 타일 (52~64, 65~77)
 	for (int i = 52; i < 65; i++, j++) {
-		LoadPngFromResource(m_tile_image_list[i], IDB_PNG1 + j);
-		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG1 + j);
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
 	}
 
 	// 4) 초록 타일 (78~90, 91~103)
 	for (int i = 78; i < 91; i++, j++) {
-		LoadPngFromResource(m_tile_image_list[i], IDB_PNG1 + j);
-		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG1 + j);
+		LoadPngFromResource(m_tile_image_list[i], IDB_PNG54 - j);
+		LoadPngFromResource(m_tile_image_list[i + 13], IDB_PNG54 - j);
 	}
 
 	// 조커 2장 (104, 105)
-	LoadPngFromResource(m_tile_image_list[104], IDB_PNG53);
-	LoadPngFromResource(m_tile_image_list[105], IDB_PNG54);
+	LoadPngFromResource(m_tile_image_list[104], IDB_PNG2);
+	LoadPngFromResource(m_tile_image_list[105], IDB_PNG1);
 }
 
 bool CServerDlg::LoadPngFromResource(CImage& img, UINT uResID)
