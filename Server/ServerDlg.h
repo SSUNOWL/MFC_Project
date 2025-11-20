@@ -6,6 +6,7 @@
 #include "ListenSocket.h"
 #include "ServiceSocket.h"
 #include <array>
+
 #include <algorithm>
 
 // CServerDlg 대화 상자
@@ -73,7 +74,7 @@ public:
 		Color color;
 		int num;
 		bool isJoker;
-		int tileId;
+		int tileId=-1; // 나머지 1~106, 비어있는 판으로 표시하기 위해 -1로 초기화
 
 	};
 	// === [게임 상태: 서버 권위] ===
@@ -98,6 +99,12 @@ public:
 	static CString TileToString(const Tile& t);      // 직렬화
 	static Tile    MakeJoker();       // 조커 생성
 	static Tile    MakeEmpty();       // 빈칸 생성
+	void PlayGame();
+	void NextTurn();
+	void Receive();
+
+	void LoadImage();
+	bool LoadPngFromResource(CImage& img, UINT uResID);
 
 	void LoadImage();
 	bool LoadPngFromResource(CImage& img, UINT uResID);
@@ -110,6 +117,12 @@ public:
 
 
 	CString m_strName;
+//	int m_intTurnPos;
+	afx_msg void OnBnClickedButtonPlay();
+	POSITION m_posTurn;
+	bool m_bCurrentTurn;
+	afx_msg void OnBnClickedButtonPass();
+	bool m_bisGameStarted;
 
 private:
 	void DrawMyTiles(CDC& dc);

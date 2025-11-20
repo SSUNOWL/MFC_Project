@@ -8,6 +8,7 @@ CServiceSocket::CServiceSocket(CServerDlg* pDlg)
     : m_pServerDlg(pDlg)
     , m_bConnected(TRUE) // 연결이 수락되었으므로 초기 상태는 TRUE
 {
+    m_strName = _T("");
 }
 
 CServiceSocket::~CServiceSocket()
@@ -91,6 +92,37 @@ void CServiceSocket::OnReceive(int nErrorCode)
             }
             else if (strType == _T("PLACE")) {
 
+            }
+            else if (strType == _T("GetName")) {
+
+                messageMap.Lookup(_T("name"), m_strName );
+
+                CString strLog;
+                strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
+                m_pServerDlg->AddLog(strLog);
+                CString strMsg;
+                strMsg.Format(_T("type:Accept|sender:서버|name:%s|num:%d"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount());
+                m_pServerDlg->BroadcastMessage(strMsg, 0); 
+                CString strChat;
+                strChat.Format(_T("%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
+                m_pServerDlg->DisplayMessage(_T("시스템"), strChat, 1);
+                // 다른 플레이어들에게 전달
+
+            }
+            else if (strType == _T("EndTurn")) {
+                // pass, receive시 턴을 끝내주세요~~ 라는 뜻
+                
+                m_pServerDlg->NextTurn();
+
+            }
+            else if (strType == _T("Receive")) {
+                POSITION m_posTurn = m_pServerDlg->m_clientSocketList.GetHeadPosition();
+                CServiceSocket* pTurn = m_pServerDlg->m_clientSocketList.GetNext(m_posTurn);
+                CString strMsg; int tileid;
+                tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
+                strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
+                m_pServerDlg->ResponseMessage(strMsg,pTurn);
+                m_pServerDlg->NextTurn();
             }
         }
     }
