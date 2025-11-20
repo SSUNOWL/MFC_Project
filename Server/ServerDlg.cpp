@@ -67,7 +67,7 @@ CServerDlg::CServerDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_strName = _T("");
-	m_intPrivateTileNum = 0;
+	//  m_intTurnPos = 0;
 }
 CServerDlg::~CServerDlg()
 {
@@ -109,7 +109,8 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CServerDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
-	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnClickedButtonPass)
+	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
+	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnBnClickedButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -148,7 +149,7 @@ BOOL CServerDlg::OnInitDialog()
 
 	m_strName = _T("서버");
 	InitTiles();
-	ShuffleTiles();
+	m_bisGameStarted = FALSE;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -327,18 +328,20 @@ void CServerDlg::ProcessAccept(CListenSocket* pListenSocket)
 	}
 
 	// 2. 리스닝 소켓의 Accept 함수를 호출하여 연결을 새 소켓에 할당
-	// ⭐️ 여기서 Accept를 호출합니다. (중복 호출 없음)
+	// 여기서 Accept를 호출합니다. (중복 호출 없음)
 	if (pListenSocket->Accept(*pNewSocket))
 	{
 		// 3. 연결 수락 성공! FD_READ 이벤트 등록 (클라이언트 메시지 수신 활성화)
 		pNewSocket->AsyncSelect(FD_READ | FD_CLOSE);
-
-		// 4. 소켓 목록에 추가하여 관리
+		CString strMsg;
+		strMsg.Format(_T("type:GetName|sender:%s"), m_strName);
+		ResponseMessage(strMsg, pNewSocket);
+		// 4. 소켓 목록에 추가하여 관리 
 		m_clientSocketList.AddTail(pNewSocket);
 
-		CString strLog;
+		/*CString strLog;
 		strLog.Format(_T("INFO: 클라이언트 연결 수락됨 (현재 %d명)"), m_clientSocketList.GetCount());
-		AddLog(strLog);
+		AddLog(strLog);*/
 	}
 	else
 	{
@@ -372,7 +375,7 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 	}
 }
 
-
+//pSender를 제외한 클라이언트에게 전달
 void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender)
 {
 	//  전송을 위한 CString -> LPCSTR 변환 준비
@@ -451,17 +454,28 @@ void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender)
 
 void CServerDlg::InitTiles() {
 	int k = 0;
-
+	int nTileid = 1;
 	// 4색 × (1~13 각 2장) = 104장
 	for (int c = RED; c <= BLACK; ++c) {
 		for (int n = 1; n <= 13; ++n) {
-			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, k+1};
-			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, k+1};
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, nTileid++};
+		}
+		for (int n = 1; n <= 13; ++n) {
+			m_tile_list[k++] = Tile{ static_cast<Color>(c), n, false, nTileid++ };
 		}
 	}
+	
 	// 조커 2장(관례: BLACK, num=0)
-	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
-	m_tile_list[k++] = Tile{ BLACK, 0, true , k+1};
+	m_tile_list[k++] = Tile{ BLACK, 0, true , nTileid++};
+	m_tile_list[k++] = Tile{ BLACK, 0, true , nTileid++};
+
+	/*for (Tile c : m_tile_list) {
+		CString s;
+		s.Format(_T("%d, %d, %d"), c.num, c.color, c.tileId);
+
+		AddLog(s);
+
+	}*/
 }
 
 void CServerDlg::ShuffleTiles() {
@@ -479,6 +493,76 @@ void CServerDlg::ShuffleTiles() {
 		
 	}*/   
 
+
+}
+
+
+void CServerDlg::PlayGame() { 
+	// 유저 정보 요청해서 다 받음.
+	//게임 시작할때 필요되는 초기화 과정 전부 여기서 진행
+	
+	ShuffleTiles();
+	//서버의 턴 시작
+	m_posTurn = NULL;
+	m_bCurrentTurn = FALSE;
+	NextTurn();
+
+	for (int i = 1; i <= 14; i++) {
+		m_private_tile[1][i] = m_rand_tile_list[m_deck_pos];
+		CString strLog;
+		strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[1][i].color, m_private_tile[1][i].num, m_private_tile[1][i].tileId, 1, i);
+		AddLog(strLog);
+		m_deck_pos++;
+	}
+
+	POSITION pos = m_clientSocketList.GetHeadPosition();
+
+	while (pos != NULL)
+	{
+		CServiceSocket* pSocket = m_clientSocketList.GetNext(pos);
+		for (int i = 1; i <= 14; i++) {
+			CString strMsg;
+			strMsg.Format(_T("type:StartTile|sender:%s|pos:%d,%d|tileid:%d"), m_strName, 1, i, m_rand_tile_list[m_deck_pos].tileId);
+			ResponseMessage(strMsg, pSocket);
+			m_deck_pos++;
+		}
+	}
+	//개인 타일판을 시각화하는 함수
+
+
+}
+
+void CServerDlg::NextTurn() {
+	CString strMsg;
+	CString strNext;
+	if (m_bCurrentTurn == TRUE) {
+		m_bCurrentTurn = FALSE;
+		m_posTurn = m_clientSocketList.GetHeadPosition();
+		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+
+		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+			
+		strNext.Format(_T("type:StartTurn|sender:시스템"));
+		ResponseMessage(strNext, pTurn);
+	}
+	else {
+		if (m_posTurn == NULL) {
+			m_bCurrentTurn = TRUE;
+			m_posTurn = NULL;
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
+			//서버는 보낼필요 없음
+		}
+		else {
+			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+
+			strNext.Format(_T("type:StartTurn|sender:시스템"));
+			ResponseMessage(strNext, pTurn);
+		}
+	}
+	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
+	
+	DisplayMessage(_T("시스템"), strMsg, 1);
 
 }
 
@@ -691,6 +775,12 @@ bool CServerDlg::IsGroupValid(std::list<Tile> tileChunk)
 void CServerDlg::OnClickedButtonPass()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+
+	if (m_bCurrentTurn == true) {
+		// 유효성 검증 코드 추가
+		NextTurn();
+	}
+
 	if (IsPublicTileValid()) // 공용판이 올바른 경우
 	{
 		// 모든 클라이언트에 타일 개수 최신화 요청 전송
@@ -708,3 +798,18 @@ void CServerDlg::OnClickedButtonPass()
 }
 
 
+
+void CServerDlg::OnBnClickedButtonPlay()
+{
+	if (m_clientSocketList.GetCount() < 1) {
+		AfxMessageBox(_T("다른 플레이어를 기다려야합니다."), MB_OK | MB_ICONWARNING);
+
+	}
+	else {
+		if (!m_bisGameStarted) {
+			PlayGame();
+			m_bisGameStarted = TRUE;
+		}
+	}
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+}

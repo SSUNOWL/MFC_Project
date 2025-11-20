@@ -14,7 +14,11 @@
 #define IDC_STATIC_STATUS               1003
 #define IDC_BUTTON_CONNECT              1004
 #define IDD_STATIC_STATUS               1005
+#define IDC_BUTTON_RECEIVE              1007
+#define IDC_BUTTON_PASS                 1008
 #define IDC_EDIT_NAME                   1009
+#define IDC_BUTTON_RECEIVE3             1009
+#define IDC_BUTTON_SETBACK              1009
 #define IDC_IPADDRESS_IP                1010
 
 // Next default values for new objects

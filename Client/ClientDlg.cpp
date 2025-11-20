@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON_CONNECT, &CClientDlg::OnBnClickedButtonConnect)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
+	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 END_MESSAGE_MAP()
 
 
@@ -105,7 +106,7 @@ BOOL CClientDlg::OnInitDialog()
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
 	m_strName = _T("익명");
-
+	m_bCurrentTurn = false;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -371,4 +372,47 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 
 
 
+}
+
+
+
+
+Tile CClientDlg::ParseIdtoTile(int Tileid) {
+	// 해결책: 변수 선언과 동시에 기본값을 할당하여
+	// 모든 코드 경로에서 초기화 상태를 보장합니다.
+	Color c = BLACK;
+	Tile newTile = Tile{ BLACK, 0, false, 0 }; // 초기화
+
+	if (Tileid >= 105) { // 조커 타일 (105, 106)
+		newTile = Tile{ BLACK, 0, true , Tileid };
+	}
+	else { // 일반 타일 (1~104)
+		int color_group = Tileid / 26;
+
+		// switch-case가 if-else if보다 더 명확합니다.
+		switch (color_group) {
+		case 0: c = RED; break;
+		case 1: c = GREEN; break;
+		case 2: c = BLUE; break;
+		case 3: c = BLACK; break;
+			// default 케이스를 넣으면 범위 외의 값(0, 4 이상)이 들어와도 c는 초기화된 값(BLACK)을 유지합니다.
+		default: break;
+		}
+
+		newTile = Tile{ c, Tileid % 26 + 1, false, Tileid };
+	}
+	return newTile;
+}
+void CClientDlg::OnBnClickedButtonPass()
+{
+
+	if (m_bCurrentTurn) {
+		//유효성 검증코드
+		CString strMsg;
+		strMsg.Format(_T("type:EndTurn|sender:%s"), m_strName);
+		RequestMessage(strMsg);
+		m_bCurrentTurn = false;
+		//에 어떤 코드를 추가할지 생각하기
+	}
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
