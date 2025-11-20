@@ -74,7 +74,7 @@ public:
 		Color color;
 		int num;
 		bool isJoker;
-		int tileId;
+		int tileId=-1; // 나머지 1~106, 비어있는 판으로 표시하기 위해 -1로 초기화
 
 	};
 	// === [게임 상태: 서버 권위] ===
@@ -101,6 +101,7 @@ public:
 	static Tile    MakeEmpty();       // 빈칸 생성
 	void PlayGame();
 	void NextTurn();
+	void Receive();
 
 	void LoadImage();
 	bool LoadPngFromResource(CImage& img, UINT uResID);

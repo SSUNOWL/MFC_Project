@@ -81,4 +81,5 @@ public:
 	CString m_strName;
 	bool m_bCurrentTurn;
 	afx_msg void OnBnClickedButtonPass();
+	afx_msg void OnBnClickedButtonReceive();
 };

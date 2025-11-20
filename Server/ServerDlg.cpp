@@ -568,14 +568,31 @@ void CServerDlg::NextTurn() {
 	DisplayMessage(_T("시스템"), strMsg, 1);
 
 }
+void CServerDlg::Receive() {
+	bool received = false;
+	for (int i = 1; i <= 3; i++) {
+		for (int j = 1; j <= 17; j++)
+			if (m_private_tile[i][j].tileId == -1) { // 비어있는 공간에 패를 넣기 위해서 조건 검사
+				m_private_tile[i][j] = m_rand_tile_list[m_deck_pos++];
+				CString strLog;
+				strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[i][j].color, m_private_tile[i][j].num, m_private_tile[i][j].tileId, i, j);
+				AddLog(strLog);
+				received = true;
+				break;
+			}
+		if (received == true)
+			break;
+	}
+}
 
-void CServerDlg::OnBnClickedButtonReceive()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	// 시작 전 판을 변경 전으로 돌리는 SetBack 실행
-	//CString strMsg;
-	//strMsg.Format(_T("type:RECEIVE|sender:%s"), m_strName);
-	//ResponseMessage(strMsg,); // 이건 client에서
+void CServerDlg::OnBnClickedButtonReceive() {
+	
+	if (m_bCurrentTurn == true) {
+		//Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
+		Receive(); // 패 한장 받기
+		NextTurn(); // 다음 차례로 넘기기
+	}
+	
 }
 
 void CServerDlg::OnBnClickedButtonPlay()
