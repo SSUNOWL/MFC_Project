@@ -591,7 +591,7 @@ void CServerDlg::OnBnClickedButtonReceive() {
 		Receive(); // 패 한장 받기
 		NextTurn(); // 다음 차례로 넘기기
 	}
-	
+	Invalidate(FALSE);
 }
 
 bool CServerDlg::IsPublicTileValid()
@@ -814,6 +814,7 @@ void CServerDlg::OnBnClickedButtonPass()
 	{
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
 	}
+	Invalidate(FALSE);
 }
 
 
@@ -830,6 +831,7 @@ void CServerDlg::OnBnClickedButtonPlay()
 		}
 	}
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	Invalidate(FALSE);
 }
 
 

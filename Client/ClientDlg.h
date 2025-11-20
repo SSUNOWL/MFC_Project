@@ -38,6 +38,9 @@ public:
 	Tile m_old_public_tile[14][28]; // 되돌리기용.
 	Tile m_old_private_tile[4][18]; // 되돌리기용. 
 
+	CImage m_tile_image_list[106];
+
+
 	void InitTiles();
 	void ClearBoards();
 	void CopyBoards();
@@ -45,6 +48,9 @@ public:
 	//void ShuffleTiles(int swaps = 300);
 	inline Tile MakeEmptyTile() const { return Tile{ BLACK, 0, false }; }
 	Tile ParseIdtoTile(int Tileid);
+
+	void LoadImage();
+	bool LoadPngFromResource(CImage& img, UINT uResID);
 
 public:
 	CClientDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
@@ -90,4 +96,6 @@ private:
 	bool IsRowValid(int);
 	bool IsRunValid(std::list<Tile> tileChunk);
 	bool IsGroupValid(std::list<Tile> tileChunk);
+	void DrawMyTiles(CDC& dc);
+	int  GetTileImageIndex(const Tile& tile) const;
 };
