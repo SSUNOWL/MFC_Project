@@ -936,59 +936,89 @@ int CServerDlg::GetTileImageIndex(const Tile& tile) const
 
 void CServerDlg::DrawMyTiles(CDC& dc)
 {
-	// 공통 상수
-	const int CELL_SIZE = 35;
-	const int TILE_DRAW_SIZE = 30;
-	const int OFFSET = (CELL_SIZE - TILE_DRAW_SIZE) / 2;
+    // 공통 상수
+    const int CELL_SIZE      = 35;
+    const int TILE_DRAW_SIZE = 32;
+    const int OFFSET         = (CELL_SIZE - TILE_DRAW_SIZE) / 2 + 1;
 
-	// === 공용판 그리기 ===
-	const int PUBLIC_START_X = 35;
-	const int PUBLIC_START_Y = 35;
+    // 실제 타일 내용 영역 크기 (여백 제외하고 쓰고 싶은 크기)
+    const int CONTENT_W = 68;
+    const int CONTENT_H = 68;
 
-	for (int row = 1; row <= 13; ++row)
-	{
-		for (int col = 1; col <= 27; ++col)
-		{
-			const Tile& t = m_public_tile[row][col];
+    // === 공용판 그리기 ===
+    const int PUBLIC_START_X = 35;
+    const int PUBLIC_START_Y = 35;
 
-			// 빈 타일 스킵 (BLACK, 0, false)
-			if (t.color == BLACK && t.num == 0 && !t.isJoker)
-				continue;
+    for (int row = 1; row <= 13; ++row)
+    {
+        for (int col = 1; col <= 27; ++col)
+        {
+            const Tile& t = m_public_tile[row][col];
 
-			int imgIndex = GetTileImageIndex(t);
-			if (imgIndex < 0) continue;
-			if (m_tile_image_list[imgIndex].IsNull()) continue;
+            // 빈 타일 스킵 (BLACK, 0, false 기준)
+            if (t.color == BLACK && t.num == 0 && !t.isJoker)
+                continue;
 
-			int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
-			int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+            int imgIndex = GetTileImageIndex(t);
+            if (imgIndex < 0) continue;
+            if (m_tile_image_list[imgIndex].IsNull()) continue;
 
-			m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
-		}
-	}
+            // 원본 이미지 크기
+            int imgW = m_tile_image_list[imgIndex].GetWidth();
+            int imgH = m_tile_image_list[imgIndex].GetHeight();
 
-	// === 개인판 그리기 ===
-	const int PRIVATE_START_X = 105;
-	const int PRIVATE_START_Y = 555;
+            // 원본 중앙에서 68x68만 잘라오기
+            int srcW = min(CONTENT_W, imgW);
+            int srcH = min(CONTENT_H, imgH);
+            int srcX = max(0, (imgW - srcW) / 2 - 1);
+            int srcY = max(0, (imgH - srcH) / 2 - 1);
 
-	for (int row = 1; row <= 3; ++row)
-	{
-		for (int col = 1; col <= 17; ++col)
-		{
-			const Tile& t = m_private_tile[row][col];
+            int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
+            int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
 
-			// 빈 타일 스킵 (BLACK, 0, false)
-			if (t.color == BLACK && t.num == 0 && !t.isJoker)
-				continue;
+            // 잘라낸 영역(srcX,srcY,srcW,srcH)을 30x30으로 축소해서 셀 안에 그림
+            m_tile_image_list[imgIndex].Draw(
+                dc,
+                drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,  // 목적지(보드) 영역
+                srcX,  srcY,  srcW,            srcH            // 원본에서 자를 영역
+            );
+        }
+    }
 
-			int imgIndex = GetTileImageIndex(t);
-			if (imgIndex < 0) continue;
-			if (m_tile_image_list[imgIndex].IsNull()) continue;
+    // === 개인판 그리기 ===
+    const int PRIVATE_START_X = 105;
+    const int PRIVATE_START_Y = 555;
 
-			int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
-			int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+    for (int row = 1; row <= 3; ++row)
+    {
+        for (int col = 1; col <= 17; ++col)
+        {
+            const Tile& t = m_private_tile[row][col];
 
-			m_tile_image_list[imgIndex].Draw(dc, drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE);
-		}
-	}
+            // 빈 타일 스킵
+            if (t.color == BLACK && t.num == 0 && !t.isJoker)
+                continue;
+
+            int imgIndex = GetTileImageIndex(t);
+            if (imgIndex < 0) continue;
+            if (m_tile_image_list[imgIndex].IsNull()) continue;
+
+            int imgW = m_tile_image_list[imgIndex].GetWidth();
+            int imgH = m_tile_image_list[imgIndex].GetHeight();
+
+            int srcW = min(CONTENT_W, imgW);
+            int srcH = min(CONTENT_H, imgH);
+            int srcX = max(0, (imgW - srcW) / 2);
+            int srcY = max(0, (imgH - srcH) / 2);
+
+            int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
+            int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+
+            m_tile_image_list[imgIndex].Draw(
+                dc,
+                drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,
+                srcX,  srcY,  srcW,            srcH
+            );
+        }
+    }
 }
-

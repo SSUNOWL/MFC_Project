@@ -775,7 +775,7 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 {
 	// 공통 상수
 	const int CELL_SIZE = 35;
-	const int TILE_DRAW_SIZE = 30;
+	const int TILE_DRAW_SIZE = 35;
 	const int OFFSET = (CELL_SIZE - TILE_DRAW_SIZE) / 2;
 
 	// === 공용판 그리기 ===
