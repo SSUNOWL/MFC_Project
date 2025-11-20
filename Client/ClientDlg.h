@@ -19,7 +19,7 @@ struct Tile {
 	Color color;
 	int num;
 	bool isJoker;
-	int tileId=-1;
+	int tileId =- 1;
 };
 
 // CClientDlg 대화 상자

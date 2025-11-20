@@ -298,7 +298,7 @@ void CClientDlg::OnBnClickedButtonConnect()
 		}
 
 		// 4. 비동기 연결 시도
-		// Connect 호출 후 즉시 함수 종료되며, 결과는 OnConnect 콜백으로 통보됩니다.
+
 		if (!m_pClientSocket->Connect(strServerIP, 12345)) //  서버 주소와 포트
 		{
 			DWORD dwError = m_pClientSocket->GetLastError();
@@ -317,7 +317,7 @@ void CClientDlg::OnBnClickedButtonConnect()
 				m_static_status.SetWindowText(_T("서버 연결 시도 중..."));
 			}
 		}
-		else // 이 경우는 매우 드물게 Connect가 바로 성공한 경우입니다.
+		else 
 		{
 			m_static_status.SetWindowText(_T("서버 연결 성공!"));
 		}
@@ -326,7 +326,6 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 void CClientDlg::OnBnClickedButtonSend()
 {
-
 	// 1. 입력창에서 메시지 가져오기
 	CString strSend;
 	m_edit_send.GetWindowText(strSend);
@@ -351,24 +350,11 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 		m_static_status.SetWindowText(_T("연결되지 않았습니다."));
 		return;
 	}
-
-	// 1. CString을 UTF-8 std::string으로 변환 (서버와 동일한 인코딩 사용 가정)
 	std::string utf8_data = CStringToUTF8(strMsg);
-
-	// 2. 메시지 본문의 길이를 구합니다. (4바이트 정수형)
-	// 길이 헤더는 4바이트(sizeof(int))로 고정합니다.
+	//메시지 헤더 길이
 	int nLength = (int)utf8_data.length();
-
-	// CAsyncSocket::Send는 비동기 함수이므로,
-	// 보낸 바이트 수를 확인하여 전송을 보장하는 견고한 로직이 필요하지만, 
-	// 여기서는 단순화를 위해 Send가 대부분의 경우 즉시 성공한다고 가정합니다.
-
-	// ----------------------------------------------------
-	// **핵심 수정: 길이 헤더 (4바이트) 먼저 전송**
-	// ----------------------------------------------------
-
+	// 길이 헤더 전송
 	int nHeaderBytesSent = m_pClientSocket->Send(&nLength, sizeof(nLength));
-
 	if (nHeaderBytesSent != sizeof(nLength))
 	{
 		// 헤더 전송 실패 또는 일부만 전송됨
@@ -379,17 +365,12 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 		return;
 	}
 
-	// ----------------------------------------------------
-	// **핵심 수정: 메시지 본문 (Payload) 전송**
-	// ----------------------------------------------------
-
 	// 메시지 본문 전송
 	int nDataBytesSent = m_pClientSocket->Send(utf8_data.c_str(), nLength);
 
 	if (nDataBytesSent == nLength)
 	{
-		// 정상 작동 (헤더 4바이트 + 데이터 nLength 바이트 모두 전송 성공)
-		// m_static_status.SetWindowText(_T("메시지 전송 성공.")); // 필요 시 사용
+		//정상작동
 	}
 	else if (nDataBytesSent == SOCKET_ERROR)
 	{
@@ -397,9 +378,7 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 		strStatus.Format(_T("ERROR: 데이터 본문 전송 실패! (에러코드: %d)"), m_pClientSocket->GetLastError());
 		m_static_status.SetWindowText(strStatus);
 	}
-	// nDataBytesSent < nLength 인 경우 (버퍼링): 실제 운영 환경에서는 Send를 루프를 돌며 
-	// nLength 바이트가 모두 전송될 때까지 재시도해야 합니다.
-	// 현재 코드에서는 이 경우를 SOCKET_ERROR가 아니라면 성공으로 간주하고 넘어가는 단순화된 로직입니다.
+
 
 }
 
@@ -407,8 +386,7 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 
 
 Tile CClientDlg::ParseIdtoTile(int Tileid) {
-	// 해결책: 변수 선언과 동시에 기본값을 할당하여
-	// 모든 코드 경로에서 초기화 상태를 보장합니다.
+
 	Color c = BLACK;
 	Tile newTile = Tile{ BLACK, 0, false, 0 }; // 초기화
 
@@ -416,19 +394,20 @@ Tile CClientDlg::ParseIdtoTile(int Tileid) {
 		newTile = Tile{ BLACK, 0, true , Tileid };
 	}
 	else { // 일반 타일 (1~104)
-		int color_group = Tileid / 26;
+		int adjustedId = Tileid - 1;
+		int color_group = adjustedId / 26;
 
-		// switch-case가 if-else if보다 더 명확합니다.
+
 		switch (color_group) {
 		case 0: c = RED; break;
 		case 1: c = GREEN; break;
 		case 2: c = BLUE; break;
 		case 3: c = BLACK; break;
-			// default 케이스를 넣으면 범위 외의 값(0, 4 이상)이 들어와도 c는 초기화된 값(BLACK)을 유지합니다.
+	
 		default: break;
 		}
 
-		newTile = Tile{ c, (Tileid % 26) % 13 + 1, false, Tileid };
+		newTile = Tile{ c, (adjustedId) % 13 + 1, false, Tileid};
 	}
 	return newTile;
 }
