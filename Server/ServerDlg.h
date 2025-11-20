@@ -106,8 +106,6 @@ public:
 	void LoadImage();
 	bool LoadPngFromResource(CImage& img, UINT uResID);
 
-	void LoadImage();
-	bool LoadPngFromResource(CImage& img, UINT uResID);
 
 	//======
 	//단일 대상한테만 보내기 -> receive버튼, 타일 돌리기
