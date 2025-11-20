@@ -88,6 +88,9 @@ public:
 	Tile m_public_tile[14][28]{};
 	Tile m_private_tile[4][18]{};
 
+	CImage m_tile_image_list[106];
+
+
 	// === [유틸/로직] ===
 	void InitTiles();                 // 106장 생성
 	void ShuffleTiles();              // 셔플
@@ -95,6 +98,9 @@ public:
 	static CString TileToString(const Tile& t);      // 직렬화
 	static Tile    MakeJoker();       // 조커 생성
 	static Tile    MakeEmpty();       // 빈칸 생성
+
+	void LoadImage();
+	bool LoadPngFromResource(CImage& img, UINT uResID);
 
 	//======
 	//단일 대상한테만 보내기 -> receive버튼, 타일 돌리기
@@ -104,4 +110,8 @@ public:
 
 
 	CString m_strName;
+
+private:
+	void DrawMyTiles(CDC& dc);
+	int  GetTileImageIndex(const Tile& tile) const;
 };
