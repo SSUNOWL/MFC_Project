@@ -7,6 +7,7 @@
 #include <vector>
 #include <list>
 
+
 enum Color {
 	RED,
 	GREEN,

@@ -340,7 +340,6 @@ void CClientDlg::OnBnClickedButtonSend()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 }
 
-
 void CClientDlg::RequestMessage(CString& strMsg) {
 	if (m_pClientSocket == nullptr || !m_pClientSocket->IsConnected())
 	{
@@ -348,32 +347,54 @@ void CClientDlg::RequestMessage(CString& strMsg) {
 		return;
 	}
 
-	//  1. 유니코드 -> ANSI 변환을 위해 USES_CONVERSION 매크로를 함수 시작 부분에 추가 (필수)
-	USES_CONVERSION;
-
-	//  2. CT2A 매크로를 사용하여 LPCSTR로 안전하게 변환
-	// CAsyncSocket::Send는 멀티바이트(ANSI) 문자열을 받습니다.
-
-
+	// 1. CString을 UTF-8 std::string으로 변환 (서버와 동일한 인코딩 사용 가정)
 	std::string utf8_data = CStringToUTF8(strMsg);
-	// 2. 소켓을 통해 서버로 데이터 전송
-	// CAsyncSocket::Send 함수는 비동기로 작동하며, 성공 시 보낸 바이트 수를 반환
-	int nBytesSent = m_pClientSocket->Send(utf8_data.c_str(), (int)utf8_data.length()); //  수정
 
-	if (nBytesSent == (int)utf8_data.length())
-	{
-		//정상 작동시 
-	}
-	else if (nBytesSent == SOCKET_ERROR)
-	{
+	// 2. 메시지 본문의 길이를 구합니다. (4바이트 정수형)
+	// 길이 헤더는 4바이트(sizeof(int))로 고정합니다.
+	int nLength = (int)utf8_data.length();
 
+	// CAsyncSocket::Send는 비동기 함수이므로,
+	// 보낸 바이트 수를 확인하여 전송을 보장하는 견고한 로직이 필요하지만, 
+	// 여기서는 단순화를 위해 Send가 대부분의 경우 즉시 성공한다고 가정합니다.
+
+	// ----------------------------------------------------
+	// **핵심 수정: 길이 헤더 (4바이트) 먼저 전송**
+	// ----------------------------------------------------
+
+	int nHeaderBytesSent = m_pClientSocket->Send(&nLength, sizeof(nLength));
+
+	if (nHeaderBytesSent != sizeof(nLength))
+	{
+		// 헤더 전송 실패 또는 일부만 전송됨
+		// 실제 구현에서는 재시도 로직이 필요하지만, 여기서는 오류 처리
 		CString strStatus;
-		strStatus.Format(_T("연결 실패! (에러코드: %d)"), m_pClientSocket->GetLastError());
+		strStatus.Format(_T("ERROR: 길이 헤더 전송 실패. (Sent: %d)"), nHeaderBytesSent);
+		m_static_status.SetWindowText(strStatus);
+		return;
+	}
+
+	// ----------------------------------------------------
+	// **핵심 수정: 메시지 본문 (Payload) 전송**
+	// ----------------------------------------------------
+
+	// 메시지 본문 전송
+	int nDataBytesSent = m_pClientSocket->Send(utf8_data.c_str(), nLength);
+
+	if (nDataBytesSent == nLength)
+	{
+		// 정상 작동 (헤더 4바이트 + 데이터 nLength 바이트 모두 전송 성공)
+		// m_static_status.SetWindowText(_T("메시지 전송 성공.")); // 필요 시 사용
+	}
+	else if (nDataBytesSent == SOCKET_ERROR)
+	{
+		CString strStatus;
+		strStatus.Format(_T("ERROR: 데이터 본문 전송 실패! (에러코드: %d)"), m_pClientSocket->GetLastError());
 		m_static_status.SetWindowText(strStatus);
 	}
-	// nBytesSent < strSend.GetLength()인 경우: 다음에 다시 보내거나 버퍼링해야 함 (복잡해지므로 단순화)
-
-
+	// nDataBytesSent < nLength 인 경우 (버퍼링): 실제 운영 환경에서는 Send를 루프를 돌며 
+	// nLength 바이트가 모두 전송될 때까지 재시도해야 합니다.
+	// 현재 코드에서는 이 경우를 SOCKET_ERROR가 아니라면 성공으로 간주하고 넘어가는 단순화된 로직입니다.
 
 }
 
@@ -619,7 +640,6 @@ void CClientDlg::OnBnClickedButtonPass()
 		requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
 		RequestMessage(requestMsg);
 
-		Sleep(100);
 
 		// 턴 종료
 		CString strMsg;
@@ -643,3 +663,5 @@ void CClientDlg::OnBnClickedButtonReceive()
 		m_bCurrentTurn = false;
 	}
 }
+
+
