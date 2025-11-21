@@ -544,6 +544,7 @@ void CServerDlg::NextTurn() {
 		strNext.Format(_T("type:StartTurn|sender:시스템"));
 		ResponseMessage(strNext, pTurn); // 턴 넘긴 후
 		strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
+		BroadcastMessage(strBackup, 0);
 	}
 	else {
 		if (m_posTurn == NULL) {
@@ -1024,27 +1025,24 @@ void CServerDlg::DrawMyTiles(CDC& dc)
 }
 
 void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정
-	if (m_bCurrentTurn) {
+	if (m_bCurrentTurn) { // 자기 차례면 개인판도 백업
 		for (int i = 1; i <= 3; i++)
 			for (int j = 1; j <= 17; j++)
 				m_old_private_tile[i][j] = m_private_tile[i][j];
-
-		for (int i = 1; i <= 13; i++)
+	}
+		for (int i = 1; i <= 13; i++) // 공용판은 항상 백업
 			for (int j = 1; j <= 27; j++)
 				m_old_public_tile[i][j] = m_public_tile[i][j];
-	}
+	
 }
 
 void CServerDlg::OnClickedButtonSetback()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	for (int i = 1; i <= 3; i++)
-		for (int j = 1; j <= 17; j++)
-			m_private_tile[i][j] = m_old_private_tile[i][j];
-
-	for (int i = 1; i <= 13; i++)
-		for (int j = 1; j <= 27; j++)
-			m_public_tile[i][j] = m_old_public_tile[i][j];
-	
-	Invalidate(FALSE);
+	if (m_bCurrentTurn) {
+		CString strMsg;
+		strMsg.Format(_T("type:Setback|sender:시스템"));
+		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
+		Invalidate(FALSE);
+	}
 }

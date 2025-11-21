@@ -180,5 +180,19 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pServerDlg->NextTurn();
 
         }
+        else if (strType == _T("Backup")) {
+            m_pServerDlg->Backup();
+        }
+        else if (strType == _T("Setback")) {
+            if (m_pServerDlg->m_bCurrentTurn) { // 자기 차례면 개인판도 Setback
+                for (int i = 1; i <= 3; i++)
+                    for (int j = 1; j <= 17; j++)
+                        m_pServerDlg->m_private_tile[i][j] = m_pServerDlg->m_old_private_tile[i][j];
+            }
+                for (int i = 1; i <= 13; i++) // 공용판은 항상 Setback
+                    for (int j = 1; j <= 27; j++)
+                        m_pServerDlg->m_public_tile[i][j] = m_pServerDlg->m_old_public_tile[i][j];
+            
+        }
     }
 }
