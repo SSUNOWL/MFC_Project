@@ -849,7 +849,7 @@ void CClientDlg::OnBnClickedButtonSetback()
 {
 	if (m_bCurrentTurn) {
 		CString strMsg;
-		strMsg.Format(_T("type:Setback|sender:Client"));
+		strMsg.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strMsg);
 	}
 }

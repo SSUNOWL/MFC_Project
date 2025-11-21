@@ -194,5 +194,10 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
                         m_pServerDlg->m_public_tile[i][j] = m_pServerDlg->m_old_public_tile[i][j];
             
         }
+        else if (strType == _T("SetbackReq")) {
+            CString strMsg;
+            strMsg.Format(_T("type:Setback|sender:╫ц╫╨еш"));
+            m_pServerDlg->BroadcastMessage(strMsg, 0);
+        }
     }
 }
