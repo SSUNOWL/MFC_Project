@@ -71,6 +71,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
+	ON_BN_CLICKED(IDC_BUTTON_SETBACK, &CClientDlg::OnBnClickedButtonSetback)
 END_MESSAGE_MAP()
 
 
@@ -842,3 +843,13 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 }
 
 
+
+
+void CClientDlg::OnBnClickedButtonSetback()
+{
+	if (m_bCurrentTurn) {
+		CString strMsg;
+		strMsg.Format(_T("type:Setback|sender:Client"));
+		RequestMessage(strMsg);
+	}
+}
