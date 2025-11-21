@@ -220,5 +220,14 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             }
             m_pClientDlg->Invalidate(FALSE);
         }
+        else if (strType == _T("Backup")&& m_pClientDlg->m_bCurrentTurn) {
+            for (int i = 1; i <= 3; i++)
+                for (int j = 1; j <= 17; j++)
+                    m_pClientDlg->m_old_private_tile[i][j] = m_pClientDlg->m_private_tile[i][j];
+
+            for (int i = 1; i <= 13; i++)
+                for (int j = 1; j <= 27; j++)
+                    m_pClientDlg->m_old_public_tile[i][j] = m_pClientDlg->m_public_tile[i][j];
+        }
     }
 }

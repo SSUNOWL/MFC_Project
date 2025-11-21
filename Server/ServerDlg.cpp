@@ -533,6 +533,7 @@ void CServerDlg::PlayGame() {
 void CServerDlg::NextTurn() {
 	CString strMsg;
 	CString strNext;
+	CString strBackup;
 	if (m_bCurrentTurn == TRUE) {
 		m_bCurrentTurn = FALSE;
 		m_posTurn = m_clientSocketList.GetHeadPosition();
@@ -541,13 +542,15 @@ void CServerDlg::NextTurn() {
 		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
 			
 		strNext.Format(_T("type:StartTurn|sender:시스템"));
-		ResponseMessage(strNext, pTurn);
+		ResponseMessage(strNext, pTurn); // 턴 넘긴 후
+		strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
 	}
 	else {
 		if (m_posTurn == NULL) {
 			m_bCurrentTurn = TRUE;
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
 			//서버는 보낼필요 없음
+			Backup(); // 서버의 개인판, 공용판 백업 (Setback을 위해)
 		}
 		else {
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
@@ -1020,12 +1023,21 @@ void CServerDlg::DrawMyTiles(CDC& dc)
     }
 }
 
-void CserverDlg::Backup() {
+void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정
+	if (m_bCurrentTurn) {
+		for (int i = 1; i <= 3; i++)
+			for (int j = 1; j <= 17; j++)
+				m_old_private_tile[i][j] = m_private_tile[i][j];
 
+		for (int i = 1; i <= 13; i++)
+			for (int j = 1; j <= 27; j++)
+				m_old_public_tile[i][j] = m_public_tile[i][j];
+	}
 }
 
 void CServerDlg::OnClickedButtonSetback()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+
 	
 }
