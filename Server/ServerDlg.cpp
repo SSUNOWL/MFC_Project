@@ -1038,6 +1038,13 @@ void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정
 void CServerDlg::OnClickedButtonSetback()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	for (int i = 1; i <= 3; i++)
+		for (int j = 1; j <= 17; j++)
+			m_private_tile[i][j] = m_old_private_tile[i][j];
 
+	for (int i = 1; i <= 13; i++)
+		for (int j = 1; j <= 27; j++)
+			m_public_tile[i][j] = m_old_public_tile[i][j];
 	
+	Invalidate(FALSE);
 }
