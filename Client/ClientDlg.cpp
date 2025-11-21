@@ -851,5 +851,6 @@ void CClientDlg::OnBnClickedButtonSetback()
 		CString strMsg;
 		strMsg.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strMsg);
+		Invalidate(FALSE);
 	}
 }
