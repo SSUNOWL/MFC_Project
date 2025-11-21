@@ -113,6 +113,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CServerDlg::OnBnClickedButtonReceive)
 	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnBnClickedButtonPass)
+	ON_BN_CLICKED(IDC_BUTTON_SetBack, &CServerDlg::OnClickedButtonSetback)
 END_MESSAGE_MAP()
 
 
@@ -257,10 +258,6 @@ HCURSOR CServerDlg::OnQueryDragIcon()
 }
 
 
-void CServerDlg::OnBnClickedButton1()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-}
 
 void CServerDlg::OnBnClickedButtonSend()
 {
@@ -1021,4 +1018,14 @@ void CServerDlg::DrawMyTiles(CDC& dc)
             );
         }
     }
+}
+
+void CserverDlg::Backup() {
+
+}
+
+void CServerDlg::OnClickedButtonSetback()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	
 }

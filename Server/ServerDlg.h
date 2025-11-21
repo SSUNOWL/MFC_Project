@@ -38,7 +38,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedButtonSend();
 	CListBox m_list_log;
 	afx_msg void OnBnClickedButtonStart();
@@ -102,6 +101,7 @@ public:
 	void PlayGame();
 	void NextTurn();
 	void Receive();
+	void Backup();
 
 	void LoadImage();
 	bool LoadPngFromResource(CImage& img, UINT uResID);
@@ -129,4 +129,6 @@ private:
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
 	int  GetTileImageIndex(const Tile& tile) const;
+public:
+	afx_msg void OnClickedButtonSetback();
 };
