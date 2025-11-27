@@ -123,10 +123,29 @@ public:
 	afx_msg void OnBnClickedButtonPass();
 	bool IsPublicTileValid();
 	int m_intPrivateTileNum;
+
+	// [251127] 타일 선택 및 이동 관련 변수
+	bool m_bIsSelected;         // 현재 타일이 선택되었는지 여부
+	bool m_bSelectedFromPublic; // 선택된 타일이 공용판(true)인지 개인판(false)인지
+	int m_nSelectedRow;         // 선택된 타일의 행
+	int m_nSelectedCol;         // 선택된 타일의 열
+
+	// [251127] 공용판 동기화 관련 함수
+	void SendUpdatePublicTile(int row, int col); // 특정 좌표의 타일 변경사항 전송
+	Tile GetTileFromId(int tileId);              // ID로 타일 객체 생성
+	void ProcessPublicBoardUpdate(CString strMsg); // 클라이언트의 요청 처리
+
+	// [251127] 규칙 검사 및 백업 함수
+	bool IsExistingPublicTile(int tileId);
+	void CopyBoards(); // 턴 시작 시 현재 상태 백업
+
 private:
 	bool IsRowValid(int);
 	bool IsRunValid(std::list<Tile> tileChunk);
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
 	int  GetTileImageIndex(const Tile& tile) const;
+
+	// [251127] 마우스 왼쪽 클릭 메시지 함수
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 };

@@ -72,6 +72,8 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
 	ON_WM_GETMINMAXINFO()
+	// [251127] 마우스 왼쪽 클릭 메시지 연결
+	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
 
 
@@ -239,6 +241,42 @@ void CClientDlg::OnPaint()
 		}
 
 		DrawMyTiles(dc);
+
+
+		// [251127] 선택된 타일 빨간 테두리 표시
+		// ==========================================
+		if (m_bIsSelected)
+		{
+			// 빨간색 펜 생성 (두께 3)
+			CPen redPen(PS_SOLID, 3, RGB(255, 0, 0));
+			CPen* pOldPen = dc.SelectObject(&redPen);
+
+			// 속은 비우기 (투명 브러시)
+			CBrush* pOldBrush = (CBrush*)dc.SelectStockObject(NULL_BRUSH);
+
+			int startX = 0, startY = 0;
+
+			// 좌표 계산 (DrawMyTiles의 좌표 로직과 동일해야 함)
+			if (m_bSelectedFromPublic)
+			{
+				// 공용판: (35, 35) 시작
+				startX = 35 + (m_nSelectedCol - 1) * 35;
+				startY = 35 + (m_nSelectedRow - 1) * 35;
+			}
+			else
+			{
+				// 개인판: (105, 555) 시작
+				startX = 105 + (m_nSelectedCol - 1) * 35;
+				startY = 555 + (m_nSelectedRow - 1) * 35;
+			}
+
+			// 테두리 그리기 (셀 크기 35x35)
+			dc.Rectangle(startX, startY, startX + 35, startY + 35);
+
+			// 리소스 복구
+			dc.SelectObject(pOldPen);
+			dc.SelectObject(pOldBrush);
+		}
 
 		CDialogEx::OnPaint();
 
@@ -842,4 +880,242 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 	}
 }
 
+//[251127] 추가
+void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// 1. 클릭된 위치가 공용판인지 개인판인지 확인
+	bool bClickedPublic = false;
+	bool bClickedPrivate = false;
+	int nRow = -1, nCol = -1;
 
+	// 공용판 범위 체크
+	if (point.x >= 35 && point.x < 35 + 27 * 35 &&
+		point.y >= 35 && point.y < 35 + 13 * 35)
+	{
+		bClickedPublic = true;
+		nCol = (point.x - 35) / 35 + 1;
+		nRow = (point.y - 35) / 35 + 1;
+	}
+	// 개인판 범위 체크
+	else if (point.x >= 105 && point.x < 105 + 17 * 35 &&
+		point.y >= 555 && point.y < 555 + 3 * 35)
+	{
+		bClickedPrivate = true;
+		nCol = (point.x - 105) / 35 + 1;
+		nRow = (point.y - 555) / 35 + 1;
+	}
+	else
+	{
+		// 판 바깥 클릭 -> 선택 해제
+		if (m_bIsSelected) {
+			m_bIsSelected = false;
+			Invalidate(TRUE);
+		}
+		CDialogEx::OnLButtonDown(nFlags, point);
+		return;
+	}
+
+	// 2. 타일 선택 또는 이동 로직
+	if (!m_bIsSelected)
+	{
+		// [상태 1: 선택 시도]
+
+		// ========================================================
+		// [규칙 추가] 내 턴이 아닐 때는 공용판 타일을 선택(조작)할 수 없음
+		// ========================================================
+		if (!m_bCurrentTurn && bClickedPublic)
+		{
+			// (옵션) 너무 자주 뜨면 귀찮을 수 있으니 메시지 박스는 생략하거나 필요시 주석 해제
+			// AfxMessageBox(_T("내 턴이 아닐 때는 공용판을 건드릴 수 없습니다."));
+			return;
+		}
+
+		// 클릭한 곳의 타일 정보 가져오기
+		Tile t;
+		if (bClickedPublic) t = m_public_tile[nRow][nCol];
+		else t = m_private_tile[nRow][nCol];
+
+		// 빈 타일이 아니면 선택
+		if (!(t.color == BLACK && t.num == 0 && !t.isJoker))
+		{
+			m_bIsSelected = true;
+			m_bSelectedFromPublic = bClickedPublic;
+			m_nSelectedRow = nRow;
+			m_nSelectedCol = nCol;
+
+			Invalidate(TRUE); // 선택 표시(빨간 테두리)
+		}
+	}
+	else
+	{
+		// [상태 2: 이동 시도]
+
+		// 같은 위치 다시 클릭 -> 선택 취소
+		if (m_bSelectedFromPublic == bClickedPublic &&
+			m_nSelectedRow == nRow && m_nSelectedCol == nCol)
+		{
+			m_bIsSelected = false;
+			Invalidate(TRUE);
+			return;
+		}
+
+		// ========================================================
+		// [규칙 추가] 이동 제한 로직
+		// ========================================================
+		// 1. 내 턴이 아닐 때: 제출 불가 (동일)
+		if (!m_bCurrentTurn && bClickedPublic)
+		{
+			AfxMessageBox(_T("내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
+			m_bIsSelected = false; Invalidate(TRUE); return;
+		}
+
+		// 2. 공용판 -> 개인판 이동 시 조건부 허용 (수정됨)
+		if (m_bSelectedFromPublic && bClickedPrivate)
+		{
+			// 선택된 타일의 정보를 가져옴
+			Tile& selectedTile = m_public_tile[m_nSelectedRow][m_nSelectedCol];
+
+			// 원래부터 공용판에 있던 타일인지 검사
+			if (IsExistingPublicTile(selectedTile.tileId))
+			{
+				AfxMessageBox(_T("기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
+				m_bIsSelected = false;
+				Invalidate(TRUE);
+				return;
+			}
+
+			// 여기에 걸리지 않으면(=이번 턴에 낸 타일이면) 이동 허용 (아래 Swap 로직 실행됨)
+		}
+		// ========================================================
+
+
+		// --- 데이터 교환 (Swap) ---
+		Tile* pSourceTile = nullptr;
+		if (m_bSelectedFromPublic)
+			pSourceTile = &m_public_tile[m_nSelectedRow][m_nSelectedCol];
+		else
+			pSourceTile = &m_private_tile[m_nSelectedRow][m_nSelectedCol];
+
+		Tile* pTargetTile = nullptr;
+		if (bClickedPublic)
+			pTargetTile = &m_public_tile[nRow][nCol];
+		else
+			pTargetTile = &m_private_tile[nRow][nCol];
+
+		// 타일 데이터 Swap
+		Tile temp = *pTargetTile;
+		*pTargetTile = *pSourceTile;
+		*pSourceTile = temp;
+
+		// --- 서버 동기화 전송 ---
+
+		// 1. 원래 있던 위치(Source)가 공용판이었다면 업데이트 전송
+		if (m_bSelectedFromPublic)
+		{
+			SendUpdatePublicTile(m_nSelectedRow, m_nSelectedCol);
+		}
+
+		// 2. 이동한 위치(Target)가 공용판이었다면 업데이트 전송
+		if (bClickedPublic)
+		{
+			SendUpdatePublicTile(nRow, nCol);
+		}
+
+		// 선택 해제 및 화면 갱신
+		m_bIsSelected = false;
+		Invalidate(TRUE);
+	}
+
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+// ===========================================
+// [251127]
+// ID를 기반으로 Tile 객체를 반환 (서버와 동일 로직)
+Tile CClientDlg::GetTileFromId(int tileId)
+{
+	if (tileId == -1) return MakeEmptyTile(); // ClientDlg.h에 정의된 함수 사용
+
+	Tile t;
+	t.tileId = tileId;
+	t.isJoker = false;
+
+	if (tileId >= 105) // 조커
+	{
+		t.color = BLACK;
+		t.num = 0;
+		t.isJoker = true;
+	}
+	else // 일반 타일
+	{
+		int adjustedId = tileId - 1;
+		int colorIdx = adjustedId / 26;
+		t.color = static_cast<Color>(colorIdx);
+		t.num = (adjustedId % 13) + 1;
+	}
+	return t;
+}
+
+// 변경된 타일 정보를 서버로 전송
+void CClientDlg::SendUpdatePublicTile(int row, int col)
+{
+	Tile t = m_public_tile[row][col];
+
+	// 빈 타일이면 -1, 아니면 tileId
+	int id = (t.color == BLACK && t.num == 0 && !t.isJoker) ? -1 : t.tileId;
+
+	// 메시지 생성: type:PLACE|pos:row,col|tileid:id
+	CString strMsg;
+	strMsg.Format(_T("type:PLACE|pos:%d,%d|tileid:%d"), row, col, id);
+
+	// 서버로 전송
+	RequestMessage(strMsg);
+}
+
+// 서버에서 온 공용판 업데이트 메시지 처리
+void CClientDlg::ProcessPublicBoardUpdate(CString strMsg)
+{
+	// 메시지 파싱 (서버 코드와 동일)
+	int nPosStart = strMsg.Find(_T("pos:"));
+	int nIdStart = strMsg.Find(_T("tileid:"));
+
+	if (nPosStart == -1 || nIdStart == -1) return;
+
+	// 1. 좌표 파싱
+	CString strPos = strMsg.Mid(nPosStart + 4, nIdStart - (nPosStart + 4) - 1);
+	int nComma = strPos.Find(_T(","));
+	int nRow = _ttoi(strPos.Left(nComma));
+	int nCol = _ttoi(strPos.Mid(nComma + 1));
+
+	// 2. TileID 파싱
+	CString strId = strMsg.Mid(nIdStart + 7);
+	int nId = _ttoi(strId);
+
+	// 3. 내 공용판 업데이트
+	m_public_tile[nRow][nCol] = GetTileFromId(nId);
+
+	// 4. 화면 갱신 (배경 지우고 다시 그리기)
+	Invalidate(TRUE);
+}
+
+bool CClientDlg::IsExistingPublicTile(int tileId)
+{
+	// ID가 -1이거나 유효하지 않으면 검사할 필요 없음
+	if (tileId <= 0) return false;
+
+	// 백업해둔 공용판(m_old_public_tile)을 뒤져서 해당 ID가 있는지 확인
+	for (int i = 0; i < 14; ++i)
+	{
+		for (int j = 0; j < 28; ++j)
+		{
+			if (m_old_public_tile[i][j].tileId == tileId)
+			{
+				// 찾았다 = 원래부터 공용판에 있던 tile
+				return true;
+			}
+		}
+	}
+	// 못 찾았다 = 이번 턴에 내가 새로 올려둔 tile
+	return false;
+}
+//==================================================
