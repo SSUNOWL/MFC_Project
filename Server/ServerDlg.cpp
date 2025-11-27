@@ -55,6 +55,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+	
 //	ON_COMMAND(IDC_BUTTON_PASS, &CAboutDlg::OnButtonPass)
 END_MESSAGE_MAP()
 
@@ -107,6 +108,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_WM_LBUTTONDOWN()
 
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CServerDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_START, &CServerDlg::OnBnClickedButtonStart)
@@ -155,6 +157,7 @@ BOOL CServerDlg::OnInitDialog()
 	LoadImage();
 	ShuffleTiles();
 	m_intPrivateTileNum = 0;
+	m_selInfo = { false, false, -1, -1 };
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -199,6 +202,10 @@ void CServerDlg::OnPaint()
 	{
 		CPaintDC dc(this); 
 
+		CRect rect;
+		GetClientRect(&rect);
+		dc.FillSolidRect(&rect, RGB(255, 255, 255));
+
 		CPen line_pen(PS_DOT, 1, RGB(80, 80, 80));
 		CPen* p_old_pen = dc.SelectObject(&line_pen);
 		int i = 0;
@@ -223,6 +230,29 @@ void CServerDlg::OnPaint()
 		}
 
 		DrawMyTiles(dc);
+
+		if (m_selInfo.bSelected)
+		{
+			int startX, startY;
+			if (m_selInfo.bIsPublic) {
+				startX = 35; startY = 35;
+			}
+			else {
+				startX = 105; startY = 555;
+			}
+
+			int drawX = startX + (m_selInfo.col - 1) * 35;
+			int drawY = startY + (m_selInfo.row - 1) * 35;
+
+			CPen pen(PS_SOLID, 3, RGB(255, 0, 0));
+			CPen* pOldPen = dc.SelectObject(&pen);
+			CBrush* pOldBrush = (CBrush*)dc.SelectStockObject(NULL_BRUSH);
+
+			dc.Rectangle(drawX, drawY, drawX + 35, drawY + 35);
+
+			dc.SelectObject(pOldPen);
+			dc.SelectObject(pOldBrush);
+		}
 
 		CDialogEx::OnPaint();
 	}
@@ -1021,4 +1051,241 @@ void CServerDlg::DrawMyTiles(CDC& dc)
             );
         }
     }
+}
+
+// [추가] 좌표 변환 함수
+bool CServerDlg::GetBoardIndexFromPoint(CPoint point, bool& bIsPublic, int& row, int& col)
+{
+	const int CELL_SIZE = 35;
+
+	// 1. 공용판 체크 (35, 35 시작)
+	int pubStartX = 35;
+	int pubStartY = 35;
+	if (point.x >= pubStartX && point.x < pubStartX + 27 * CELL_SIZE &&
+		point.y >= pubStartY && point.y < pubStartY + 13 * CELL_SIZE)
+	{
+		bIsPublic = true;
+		col = (point.x - pubStartX) / CELL_SIZE + 1;
+		row = (point.y - pubStartY) / CELL_SIZE + 1;
+		return true;
+	}
+
+	// 2. 개인판 체크 (105, 555 시작)
+	int privStartX = 105;
+	int privStartY = 555;
+	if (point.x >= privStartX && point.x < privStartX + 17 * CELL_SIZE &&
+		point.y >= privStartY && point.y < privStartY + 3 * CELL_SIZE)
+	{
+		bIsPublic = false;
+		col = (point.x - privStartX) / CELL_SIZE + 1;
+		row = (point.y - privStartY) / CELL_SIZE + 1;
+		return true;
+	}
+
+	return false;
+}
+
+// [추가] 타일 이동(스왑) 함수
+void CServerDlg::MoveTile(bool bSrcPublic, int sRow, int sCol, bool bDestPublic, int dRow, int dCol)
+{
+	// 1. 타일 스왑
+	Tile& srcTile = (bSrcPublic) ? m_public_tile[sRow][sCol] : m_private_tile[sRow][sCol];
+	Tile& destTile = (bDestPublic) ? m_public_tile[dRow][dCol] : m_private_tile[dRow][dCol];
+
+	Tile temp = destTile;
+	destTile = srcTile;
+	srcTile = temp;
+
+	// 2. [핵심] 공용판 변경 시 모든 클라이언트에게 브로드캐스트
+	if (bSrcPublic || bDestPublic)
+	{
+		CString strBoard = SerializePublicBoard();
+
+		CString strMsg;
+		strMsg.Format(_T("type:UpdateBoard|sender:%s|board:%s"), m_strName, strBoard);
+
+		// nullptr(또는 0)을 넣으면 나를 제외한 '모든' 연결된 소켓에 전송
+		BroadcastMessage(strMsg, nullptr);
+	}
+}
+
+// [추가] 마우스 클릭 핸들러
+void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// 턴 체크 필요시 주석 해제
+	if (!m_bCurrentTurn) {
+		CDialogEx::OnLButtonDown(nFlags, point);
+		return;
+	}
+
+	bool bClickedPublic = false;
+	int nRow = -1, nCol = -1;
+
+	// 1. 유효한 판 클릭 확인
+	if (!GetBoardIndexFromPoint(point, bClickedPublic, nRow, nCol)) {
+		m_selInfo.bSelected = false;
+		Invalidate(TRUE); // 배경까지 지워야 함
+		CDialogEx::OnLButtonDown(nFlags, point);
+		return;
+	}
+
+	// 2. 타일 선택/이동 로직
+	if (!m_selInfo.bSelected)
+	{
+		// [선택]
+		Tile t;
+		if (bClickedPublic) t = m_public_tile[nRow][nCol];
+		else                t = m_private_tile[nRow][nCol];
+
+		// 빈 타일 체크 (ServerDlg의 Tile 구조체 사용)
+		bool isEmpty = (t.color == BLACK && t.num == 0 && !t.isJoker);
+
+		if (!isEmpty) {
+			m_selInfo.bSelected = true;
+			m_selInfo.bIsPublic = bClickedPublic;
+			m_selInfo.row = nRow;
+			m_selInfo.col = nCol;
+			Invalidate(FALSE); // 테두리 그리기
+		}
+	}
+	else
+	{
+		// [이동]
+		// 제자리 클릭 시 선택 해제
+		if (m_selInfo.bIsPublic == bClickedPublic && m_selInfo.row == nRow && m_selInfo.col == nCol) {
+			m_selInfo.bSelected = false;
+		}
+		else {
+			// 이동 수행
+			MoveTile(m_selInfo.bIsPublic, m_selInfo.row, m_selInfo.col, bClickedPublic, nRow, nCol);
+			m_selInfo.bSelected = false;
+		}
+		Invalidate(TRUE); // 잔상 제거를 위해 TRUE
+	}
+
+	CDialogEx::OnLButtonDown(nFlags, point);
+}
+
+CString CServerDlg::SerializePublicBoard() // 서버는 CServerDlg:: 로 변경
+{
+	CString strData = _T("");
+	CString strTemp;
+
+	for (int r = 1; r <= 13; ++r) {
+		for (int c = 1; c <= 27; ++c) {
+			int id = -1;
+			// 빈 타일인지 확인 (ServerDlg의 경우 구조체 멤버가 다를 수 있으니 확인 필요)
+			// ClientDlg는 TileId가 -1인지, 혹은 color==BLACK && num==0인지 확인
+			Tile& t = m_public_tile[r][c];
+
+			// 빈 타일 조건 (작성하신 코드 기준)
+			if (t.color == BLACK && t.num == 0 && !t.isJoker)
+				id = -1;
+			else
+				id = t.tileId;
+
+			strTemp.Format(_T("%d,"), id);
+			strData += strTemp;
+		}
+	}
+	return strData;
+}
+
+// 수신받은 문자열을 공용판에 반영
+void CServerDlg::DeserializePublicBoard(CString strBoardData) // 서버는 CServerDlg:: 로 변경
+{
+	int r = 1;
+	int c = 1;
+	int nPos = 0;
+
+	// 콤마(,)를 기준으로 자름
+	CString strToken = strBoardData.Tokenize(_T(","), nPos);
+
+	while (!strToken.IsEmpty())
+	{
+		int nTileId = _ttoi(strToken);
+
+		// ID를 이용해 타일 정보 복원
+		if (nTileId == -1) {
+			// 빈 타일 생성 (MakeEmptyTile 함수 활용 권장)
+			m_public_tile[r][c] = Tile{ BLACK, 0, false, -1 };
+		}
+		else {
+			// ID로 타일 생성 (서버에도 ParseIdtoTile 함수가 있어야 함)
+			m_public_tile[r][c] = ParseIdtoTile(nTileId);
+		}
+
+		c++;
+		if (c > 27) { // 다음 줄로
+			c = 1;
+			r++;
+			if (r > 13) break;
+		}
+		strToken = strBoardData.Tokenize(_T(","), nPos);
+	}
+
+	Invalidate(TRUE); // 화면 갱신
+}
+
+// [ServerDlg.cpp] 맨 아래에 추가
+
+// 1. 타일 생성 헬퍼 (서버용)
+CServerDlg::Tile CServerDlg::ParseIdtoTile(int Tileid)
+{
+	Color c = BLACK;
+	Tile newTile = Tile{ BLACK, 0, false, -1 };
+
+	if (Tileid >= 105) { // 조커
+		newTile = Tile{ BLACK, 0, true , Tileid };
+	}
+	else { // 일반 타일
+		int adjustedId = Tileid - 1;
+		int color_group = adjustedId / 26;
+
+		switch (color_group) {
+		case 0: c = RED; break;
+		case 1: c = GREEN; break;
+		case 2: c = BLUE; break;
+		case 3: c = BLACK; break;
+		default: break;
+		}
+		newTile = Tile{ c, (adjustedId) % 13 + 1, false, Tileid };
+	}
+	return newTile;
+}
+
+// 2. 메시지 처리 및 전파 (핵심 로직)
+void CServerDlg::ProcessMessage(CString strMsg, CServiceSocket* pSender)
+{
+	int nPos = 0;
+	CString strToken = strMsg.Tokenize(_T("|"), nPos);
+
+	CString strType = _T("");
+
+	while (!strToken.IsEmpty())
+	{
+		int nSep = strToken.Find(_T(":"));
+		if (nSep != -1)
+		{
+			CString strKey = strToken.Left(nSep);
+			CString strValue = strToken.Mid(nSep + 1);
+
+			if (strKey == _T("type")) strType = strValue;
+
+			else if (strKey == _T("board"))
+			{
+				if (strType == _T("UpdateBoard"))
+				{
+					// 1. 서버 자신의 화면 최신화
+					DeserializePublicBoard(strValue);
+
+					// 2. [핵심] 다른 클라이언트들에게 변경 사항 전파 (Broadcast)
+					// pSender(보낸 사람)를 제외하고 전송함
+					BroadcastMessage(strMsg, pSender);
+				}
+			}
+			// ... (채팅 등 다른 로직) ...
+		}
+		strToken = strMsg.Tokenize(_T("|"), nPos);
+	}
 }
