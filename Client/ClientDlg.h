@@ -92,6 +92,8 @@ public:
 	bool IsPublicTileValid();
 	int m_intPrivateTileNum;
 	afx_msg void OnBnClickedButtonReceive();
+	afx_msg void OnDestroy();
+	bool m_bisGameStarted;
 
 	// [251127] 타일 선택 및 이동 관련 변수
 	bool m_bIsSelected;         // 현재 타일이 선택되었는지 여부
