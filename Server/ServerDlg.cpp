@@ -574,7 +574,7 @@ void CServerDlg::NextTurn() {
 	CString strMsg;
 	CString strNext;
 	CString strBackup;
-	if (m_bCurrentTurn == TRUE) {
+	if (m_bCurrentTurn == TRUE) { // 서버 -> 플레이어 1로 넘길 때
 		m_bCurrentTurn = FALSE;
 		m_posTurn = m_clientSocketList.GetHeadPosition();
 		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
@@ -587,21 +587,25 @@ void CServerDlg::NextTurn() {
 		BroadcastMessage(strBackup, 0);
 	}
 	else {
-		if (m_posTurn == NULL) {
+		if (m_posTurn == NULL) { // 서버로 턴이 넘어올 때
 			m_bCurrentTurn = TRUE;
 
-			// [251127] 내 턴 시작 시점의 판 상태 백업] (이게 있어야 회수 규칙 작동)
-			CopyBoards();
+			
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
 			//서버는 보낼필요 없음
-			Backup(); // 서버의 개인판, 공용판 백업 (Setback을 위해)
+			Backup();
+			strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
+			BroadcastMessage(strBackup, 0);
 		}
-		else {
+		else { // 클라 -> 클라
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
 
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
+			Backup();
+			strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
+			BroadcastMessage(strBackup, 0);
 		}
 	}
 	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
@@ -1311,8 +1315,6 @@ bool CServerDlg::IsExistingPublicTile(int tileId)
 	// 이번 턴에 내가 올린 타일임 (회수 가능)
 	return false;
 }
-    }
-}
 
 void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정
 	if (m_bCurrentTurn) { // 자기 차례면 개인판도 백업
@@ -1333,6 +1335,17 @@ void CServerDlg::OnClickedButtonSetback()
 		CString strMsg;
 		strMsg.Format(_T("type:Setback|sender:시스템"));
 		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
+	
+		Setback();
 		Invalidate(FALSE);
 	}
+}
+void CServerDlg::Setback() {
+	for (int i = 1; i <= 3; i++)
+		for (int j = 1; j <= 17; j++)
+			m_private_tile[i][j] = m_old_private_tile[i][j];
+
+	for (int i = 1; i <= 13; i++) // 공용판은 항상 백업
+		for (int j = 1; j <= 27; j++)
+			m_public_tile[i][j] = m_old_public_tile[i][j];
 }
