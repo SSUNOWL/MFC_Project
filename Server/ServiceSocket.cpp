@@ -164,7 +164,6 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             // 다른 플레이어들에게 전달
 
         }
-
         else if (strType == _T("EndTurn")) {
             // pass, receive시 턴을 끝내주세요~~ 라는 
             m_pServerDlg->NextTurn();
@@ -179,6 +178,41 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pServerDlg->ResponseMessage(strMsg, pTurn);
             m_pServerDlg->NextTurn();
 
+        }
+        else if (strType == _T("EndGame")) {
+            CString tmpString;
+            int isNormalEnd = -1;
+            if (messageMap.Lookup(_T("isNormalEnd"), tmpString)) {
+                isNormalEnd = _ttoi(tmpString);
+            }
+
+            if (isNormalEnd == 0) { // 비정상적으로 종료된 경우
+                // 게임 종료
+                m_pServerDlg->m_bisGameStarted = false;
+
+				// 송신자를 제외한 모든 클라이언트에게 게임 종료 메시지 전송
+                CServiceSocket* pSender = NULL;
+                POSITION pos = m_pServerDlg->m_clientSocketList.GetHeadPosition();
+                while (pos != NULL) {
+                    CServiceSocket* pSocket = m_pServerDlg->m_clientSocketList.GetNext(pos);
+                    if (pSocket && (pSocket->m_strName == strSender)) {
+                        pSender = pSocket;
+                    }
+                }
+
+                CString requestMsg;
+                requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
+                m_pServerDlg->BroadcastMessage(requestMsg, pSender);
+                
+                AfxMessageBox(_T("플레이어 탈주로 게임을 종료합니다.", MB_OK));
+
+                // 다이얼로그 닫기
+                m_pServerDlg->PostMessage(WM_CLOSE);
+                //if (m_pServerDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+                //{
+                //    m_pServerDlg->PostMessage(WM_CLOSE);
+                //}
+            }
         }
     }
 }

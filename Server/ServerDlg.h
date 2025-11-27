@@ -129,4 +129,6 @@ private:
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
 	int  GetTileImageIndex(const Tile& tile) const;
+public:
+	afx_msg void OnDestroy();
 };

@@ -72,6 +72,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
 	ON_WM_GETMINMAXINFO()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -111,6 +112,8 @@ BOOL CClientDlg::OnInitDialog()
 	m_strName = _T("익명");
 	m_bCurrentTurn = false;
 	LoadImage();
+
+	m_bisGameStarted = FALSE;
 
 	m_intPrivateTileNum = 0;
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
@@ -843,3 +846,15 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 }
 
 
+
+void CClientDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	if (m_bisGameStarted) // 게임 진행 중에 서버가 탈주한 경우
+	{
+		CString requestMsg;
+		requestMsg.Format(_T("type:EndGame|sender:%s|isNormalEnd:0"), m_strName);
+		RequestMessage(requestMsg);
+	}
+}

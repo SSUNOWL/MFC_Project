@@ -220,5 +220,29 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             }
             m_pClientDlg->Invalidate(FALSE);
         }
+        else if (strType == _T("EndGame")) {
+            CString tmpString;
+            int isNormalEnd = -1;
+            if (messageMap.Lookup(_T("isNormalEnd"), tmpString)) {
+				isNormalEnd = _ttoi(tmpString);
+            }
+
+            if (isNormalEnd == 0) { // 비정상적으로 종료된 경우
+                // 게임 종료
+                m_pClientDlg->m_bisGameStarted = FALSE;
+
+                AfxMessageBox(_T("플레이어 탈주로 게임을 종료합니다.", MB_OK));
+                // 다이얼로그 닫기
+                if (m_pClientDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+                {
+                    m_pClientDlg->PostMessage(WM_CLOSE);
+                }
+            }
+        }
+        else if (strType == _T("GameStarted")) {
+			m_pClientDlg->m_bisGameStarted = TRUE;
+
+            AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
+        }
     }
 }
