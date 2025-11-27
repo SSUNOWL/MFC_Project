@@ -1310,8 +1310,8 @@ bool CServerDlg::IsExistingPublicTile(int tileId)
 	}
 	// 이번 턴에 내가 올린 타일임 (회수 가능)
 	return false;
-}
-    }
+
+    
 }
 
 void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정
