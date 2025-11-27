@@ -600,10 +600,7 @@ void CServerDlg::NextTurn() {
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
 
-<<<<<<< HEAD
-=======
 
->>>>>>> trycatch
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
 		}
