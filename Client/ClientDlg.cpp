@@ -686,6 +686,9 @@ void CClientDlg::OnBnClickedButtonPass()
 void CClientDlg::OnBnClickedButtonReceive()
 {
 	if (m_bCurrentTurn) {
+		CString strSetback;
+		strSetback.Format(_T("type:SetbackReq|sender:Client"));
+		RequestMessage(strSetback);
 		CString strMsg;
 		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
 		RequestMessage(strMsg);

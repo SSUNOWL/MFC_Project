@@ -640,12 +640,19 @@ void CServerDlg::Receive() {
 void CServerDlg::OnBnClickedButtonReceive() {
 	
 	if (m_bCurrentTurn == true) {
-		Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
-		Receive(); // 패 한장 받기
-		NextTurn(); // 다음 차례로 넘기기
-	}
-	Invalidate(FALSE);
+			CString strMsg;
+			strMsg.Format(_T("type:Setback|sender:시스템"));
+			Setback();
+			BroadcastMessage(strMsg, 0); // 전체 공용판 setback
+			Receive(); // 패 한장 받기
+			// 턴 종료
+			NextTurn();
+		}
+		Invalidate(FALSE);
+		
+		
 }
+
 
 bool CServerDlg::IsPublicTileValid()
 {
