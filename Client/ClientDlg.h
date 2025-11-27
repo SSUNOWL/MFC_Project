@@ -92,13 +92,28 @@ public:
 	bool IsPublicTileValid();
 	int m_intPrivateTileNum;
 	afx_msg void OnBnClickedButtonReceive();
+	afx_msg void OnDestroy();
+	bool m_bisGameStarted;
+
+	// [251127] 타일 선택 및 이동 관련 변수
+	bool m_bIsSelected;         // 현재 타일이 선택되었는지 여부
+	bool m_bSelectedFromPublic; // 선택된 타일이 공용판(true)인지 개인판(false)인지
+	int m_nSelectedRow;         // 선택된 타일의 행 (배열 인덱스)
+	int m_nSelectedCol;         // 선택된 타일의 열 (배열 인덱스)
+
+	// [251127] 공용판 동기화 함수
+	Tile GetTileFromId(int tileId);              // ID로 타일 복원
+	void ProcessPublicBoardUpdate(CString strMsg); // 서버에서 온 변경사항 반영
+	void SendUpdatePublicTile(int row, int col);   // 변경사항 서버로 전송
+
+	// [251127] 기존 공용판에 있던 타일인지 검사하는 함수
+	bool IsExistingPublicTile(int tileId);
 private:
 	bool IsRowValid(int);
 	bool IsRunValid(std::list<Tile> tileChunk);
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
 	int  GetTileImageIndex(const Tile& tile) const;
-public:
-	afx_msg void OnDestroy();
-	bool m_bisGameStarted;
+	// [251127] 마우스 클릭 이벤트 처리 함수 선언
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 };

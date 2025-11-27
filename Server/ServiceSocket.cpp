@@ -140,8 +140,8 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
     {
         m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
         CString strType, strSender;
-        if (messageMap.Lookup(_T("type"), strType));
-        if (messageMap.Lookup(_T("sender"), strSender));
+        if (messageMap.Lookup(_T("type"), strType)){}
+        if (messageMap.Lookup(_T("sender"), strSender)){}
         if (strType == _T("CHAT")) {
             CString strSend;
             if (messageMap.Lookup(_T("content"), strSend));
@@ -149,6 +149,10 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pServerDlg->BroadcastMessage(strMessage, this);
         }
         else if (strType == _T("PLACE")) {
+            // [251127] ServerDlg에 구현한 함수 호출
+            // 1. 서버의 공용판 배열 업데이트
+            // 2. 다른 클라이언트들에게 브로드캐스트
+            m_pServerDlg->ProcessPublicBoardUpdate(strMessage);
         }
         else if (strType == _T("GetName")) {
             messageMap.Lookup(_T("name"), m_strName);
