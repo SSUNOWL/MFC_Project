@@ -1,16 +1,13 @@
-// ClientSocket.cpp : 구현 파일
+// ClientSocket.cpp
 
 #include "pch.h"
-#include "Client.h" // 프로젝트 이름 헤더
 #include "ClientSocket.h"
-#include "ClientDlg.h" // ★ ClientDlg 멤버 접근용
+#include "ClientDlg.h" // CClientDlg의 실제 정의를 위해 포함
 #include "afxsock.h"
-
-// 생성자
+// 생성자 구현
 CClientSocket::CClientSocket(CClientDlg* pDlg)
-    : m_pClientDlg(pDlg)
+    : m_pClientDlg(pDlg) // 대화 상자 포인터 초기화
     , m_bConnected(FALSE)
-    , m_nextMessageSize(0)
 {
 }
 
@@ -18,6 +15,7 @@ CClientSocket::~CClientSocket()
 {
 }
 
+// 다음 단계에서 구현 예정
 void CClientSocket::OnConnect(int nErrorCode)
 {
     m_bConnected = TRUE;
@@ -34,26 +32,18 @@ void CClientSocket::OnConnect(int nErrorCode)
     CAsyncSocket::OnConnect(nErrorCode);
 }
 
-void CClientSocket::OnClose(int nErrorCode)
-{
-    m_bConnected = FALSE;
-    if (m_pClientDlg)
-    {
-        CString strLog;
-        strLog.Format(_T("INFO: 서버와의 연결이 끊어졌습니다. (에러코드: %d)"), nErrorCode);
-        m_pClientDlg->m_static_status.SetWindowText(strLog);
-    }
-    CAsyncSocket::OnClose(nErrorCode);
-}
-
-// 맵 파싱 헬퍼 함수
 typedef CMap<CString, LPCTSTR, CString, LPCTSTR> CStringToStringMap;
 void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
 {
+
     CString strToken;
     int nPos = 0;
+
+    // 기존 데이터 정리
     mapResult.RemoveAll();
+
     strToken = strMessage.Tokenize(_T("|"), nPos);
+
     while (!strToken.IsEmpty())
     {
         int nColonPos = strToken.Find(_T(':'));
@@ -61,13 +51,15 @@ void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
         {
             CString strKey = strToken.Left(nColonPos);
             CString strValue = strToken.Mid(nColonPos + 1);
+
+            //  매개변수로 받은 mapResult에 삽입
             mapResult[strKey] = strValue;
         }
         strToken = strMessage.Tokenize(_T("|"), nPos);
     }
+
 }
 
-// [수정됨] 안전한 OnReceive
 void CClientSocket::OnReceive(int nErrorCode)
 {
     char tempBuffer[1024];
@@ -76,14 +68,17 @@ void CClientSocket::OnReceive(int nErrorCode)
     if (nRecv > 0)
     {
         m_recvBuffer.insert(m_recvBuffer.end(), tempBuffer, tempBuffer + nRecv);
-
         while (true)
         {
-            if (m_recvBuffer.size() < sizeof(int)) break;
-
+            if (m_recvBuffer.size() < sizeof(int))
+            {
+                break;
+            }
+            
             if (m_nextMessageSize == 0)
             {
                 int nLength = 0;
+            
                 std::memcpy(&nLength, m_recvBuffer.data(), sizeof(int));
                 m_nextMessageSize = static_cast<size_t>(nLength);
 
@@ -95,29 +90,23 @@ void CClientSocket::OnReceive(int nErrorCode)
                 }
             }
 
+            
             size_t payload_size = m_recvBuffer.size() - sizeof(int);
 
             if (payload_size >= m_nextMessageSize)
             {
                 const char* message_start = m_recvBuffer.data() + sizeof(int);
                 std::string utf8_data(message_start, m_nextMessageSize);
-
-                // 메시지 처리 호출
-                ProcessExtractedMessage(utf8_data);
-
-                // [중요] 버퍼 정리 (vector iterator 오류 방지)
+                ProcessExtractedMessage(utf8_data); 
                 size_t total_processed_size = sizeof(int) + m_nextMessageSize;
+                m_recvBuffer.erase(m_recvBuffer.begin(),
+                m_recvBuffer.begin() + total_processed_size);
 
-                if (total_processed_size <= m_recvBuffer.size()) {
-                    m_recvBuffer.erase(m_recvBuffer.begin(), m_recvBuffer.begin() + total_processed_size);
-                }
-                else {
-                    m_recvBuffer.clear(); // 비정상 상황 시 초기화
-                }
                 m_nextMessageSize = 0;
             }
             else
             {
+
                 break;
             }
         }
@@ -131,67 +120,55 @@ void CClientSocket::OnReceive(int nErrorCode)
     CAsyncSocket::OnReceive(nErrorCode);
 }
 
-// [수정됨] 소켓에서 로직을 처리하는 함수 (협업 기준)
+void CClientSocket::OnClose(int nErrorCode)
+{
+    m_bConnected = FALSE; //  연결 종료 시 상태 업데이트
+    // ... (UI 메시지 출력 로직) ...
+
+    if (m_pClientDlg)
+    {
+        //  UI 상태 업데이트
+        CString strLog;
+        strLog.Format(_T("INFO: 서버와의 연결이 끊어졌습니다. (에러코드: %d)"), nErrorCode);
+        m_pClientDlg->m_static_status.SetWindowText(strLog);
+    }
+    CAsyncSocket::OnClose(nErrorCode);
+}
+
+
 void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
 {
-    // 1. 변환 (CStringToUTF8가 없어도 동작하도록 직접 변환)
-    int nLen = MultiByteToWideChar(CP_UTF8, 0, utf8_data.c_str(), (int)utf8_data.size(), NULL, 0);
-    CString strMessage;
-    if (nLen > 0) {
-        WCHAR* pBuf = strMessage.GetBuffer(nLen);
-        MultiByteToWideChar(CP_UTF8, 0, utf8_data.c_str(), (int)utf8_data.size(), pBuf, nLen);
-        strMessage.ReleaseBuffer(nLen);
-    }
 
-    // 2. 파싱
+    CString strMessage = UTF8ToCString(utf8_data);
     CStringToStringMap messageMap;
     ParseMessageToMap(strMessage, messageMap);
 
     CString strType, strSender;
-    messageMap.Lookup(_T("type"), strType);
-    messageMap.Lookup(_T("sender"), strSender);
+    if (messageMap.Lookup(_T("type"), strType));
+    if (messageMap.Lookup(_T("sender"), strSender));
 
     if (m_pClientDlg)
     {
-        // --- [1] 채팅 ---
         if (strType == _T("CHAT")) {
             CString strSend;
-            if (messageMap.Lookup(_T("content"), strSend))
-                m_pClientDlg->DisplayMessage(strSender, strSend, TRUE);
+            if (messageMap.Lookup(_T("content"), strSend));
+            m_pClientDlg->DisplayMessage(strSender, strSend, TRUE);
         }
-
-        // --- [2] 공용판 업데이트 (추가됨) ---
-        else if (strType == _T("UpdateBoard"))
-        {
-            CString strBoardData;
-            if (messageMap.Lookup(_T("board"), strBoardData))
-            {
-                // UI 동기화 함수 호출
-                m_pClientDlg->DeserializePublicBoard(strBoardData);
-            }
+        else if (strType == _T("PLACE")) {
         }
-
-        // --- [3] 턴 시작 알림 ---
-        else if (strType == _T("StartTurn")) {
-            m_pClientDlg->m_bCurrentTurn = true;
-            AfxMessageBox(_T("당신의 턴입니다!")); // 여기서 한 번만 뜹니다.
-        }
-
-        // --- [4] 이름 설정 ---
         else if (strType == _T("GetName")) {
             CString strMsg;
             CString Name = m_pClientDlg->m_strName;
             strMsg.Format(_T("type:GetName|sender:%s|name:%s"), Name, Name);
             m_pClientDlg->RequestMessage(strMsg);
         }
-
-        // --- [5] 초기 타일 ---
         else if (strType == _T("StartTile")) {
             CString strPos, strTileid;
-            int nX = 0, nY = 0, nTileid = 0;
+            int nX, nY, nTileid;
             if (messageMap.Lookup(_T("pos"), strPos)) {
                 int comma_pos = strPos.Find(_T(","));
-                CString sub = strPos.Mid(0, comma_pos);
+                CString sub;
+                sub = strPos.Mid(0, comma_pos);
                 strPos = strPos.Mid(comma_pos + 1);
                 nX = _ttoi(sub);
                 nY = _ttoi(strPos);
@@ -199,21 +176,22 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             if (messageMap.Lookup(_T("tileid"), strTileid)) {
                 nTileid = _ttoi(strTileid);
             }
+
             m_pClientDlg->m_private_tile[nX][nY] = m_pClientDlg->ParseIdtoTile(nTileid);
-
-            // 로그
+            // 로그 출력용
             CString strMsg;
-            strMsg.Format(_T("%d %d"), nTileid, m_pClientDlg->m_private_tile[nX][nY].tileId);
+            strMsg.Format(_T("%d %d"), nTileid,  m_pClientDlg->m_private_tile[nX][nY].tileId);
             m_pClientDlg->DisplayMessage(0, strMsg, 1);
-
+            //개인 타일판을 시각화하는 함수
             m_pClientDlg->Invalidate(FALSE);
         }
-
-        // --- [6] 입장 알림 ---
+        else if (strType == _T("StartTurn")) {
+            m_pClientDlg->m_bCurrentTurn = true;
+        }
         else if (strType == _T("Accept")) {
             CString name, strNum;
-            int nNum = 0;
-            messageMap.Lookup(_T("name"), name);
+            int nNum;
+            if (messageMap.Lookup(_T("name"), name));
             if (messageMap.Lookup(_T("num"), strNum)) {
                 nNum = _ttoi(strNum) + 1;
             }
@@ -221,11 +199,10 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             strMsg.Format(_T("%s님이 입장하였습니다. 현재 %d명"), name, nNum);
             m_pClientDlg->DisplayMessage(_T("시스템"), strMsg, true);
         }
-
-        // --- [7] 타일 받기 ---
         else if (strType == _T("ReceiveTile")) {
             CString strPos, strTileid;
-            int nTileid = 0;
+            int nTileid;
+
             if (messageMap.Lookup(_T("tileid"), strTileid)) {
                 nTileid = _ttoi(strTileid);
             }
@@ -238,7 +215,8 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                         break;
                     }
                 }
-                if (received == true) break;
+                if (received == true)
+                    break;
             }
             m_pClientDlg->Invalidate(FALSE);
         }
