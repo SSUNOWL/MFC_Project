@@ -114,6 +114,7 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_PLAY, &CServerDlg::OnBnClickedButtonPlay)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CServerDlg::OnBnClickedButtonPass)
 	ON_BN_CLICKED(IDC_BUTTON_SetBack, &CServerDlg::OnClickedButtonSetback)
+	ON_WM_DESTROY()
 	// [251127] 마우스 클릭 메시지 등록
 	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
@@ -599,8 +600,6 @@ void CServerDlg::NextTurn() {
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
 
-			AfxMessageBox(_T("턴이 서버로 넘어왔습니다.", MB_OK));
-
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
 		}
@@ -871,10 +870,16 @@ void CServerDlg::OnBnClickedButtonPlay()
 		if (!m_bisGameStarted) {
 			PlayGame();
 			m_bisGameStarted = TRUE;
+
+			CString requestMsg;
+			requestMsg.Format(_T("type:GameStarted"));
+			BroadcastMessage(requestMsg, 0);
+
+			Invalidate(FALSE);
+
+			AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
 		}
 	}
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	Invalidate(FALSE);
 }
 
 
@@ -1066,7 +1071,17 @@ void CServerDlg::DrawMyTiles(CDC& dc)
     }
 }
 
-// ServerDlg.cpp 맨 하단에 추가
+void CServerDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	if (m_bisGameStarted) // 게임 진행 중에 서버가 탈주한 경우
+	{
+		CString requestMsg;
+		requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
+		BroadcastMessage(requestMsg, 0);
+	}
+}
 
 // ServerDlg.cpp - OnLButtonDown 함수 전체 수정
 
