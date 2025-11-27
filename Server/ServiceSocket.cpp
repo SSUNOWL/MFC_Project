@@ -174,14 +174,21 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
         }
 
         else if (strType == _T("Receive")) {
-            POSITION m_posTurn = m_pServerDlg->m_clientSocketList.GetHeadPosition();
-            CServiceSocket* pTurn = m_pServerDlg->m_clientSocketList.GetNext(m_posTurn);
-            CString strMsg; int tileid;
-            tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
-            strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
-            m_pServerDlg->ResponseMessage(strMsg, pTurn);
-            m_pServerDlg->NextTurn();
+            if (m_pServerDlg->m_deck_pos < 106) {
+                CString strMsg; int tileid;
+                tileid = m_pServerDlg->m_rand_tile_list[m_pServerDlg->m_deck_pos++].tileId;
+                strMsg.Format(_T("type:ReceiveTile|tileid:%d"), tileid);
+                m_pServerDlg->ResponseMessage(strMsg, this);
+                m_pServerDlg->NextTurn();
+            }
+            else {
+                CString strMsg;
+                strMsg.Format(_T("type:CHAT|sender:시스템|content:현재 남은 타일이 없습니다."));
 
+                m_pServerDlg->ResponseMessage(strMsg, this);
+
+                m_pServerDlg->NextTurn();
+            }
         }
         else if (strType == _T("EndGame")) {
             CString tmpString;

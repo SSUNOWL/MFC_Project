@@ -601,6 +601,10 @@ void CServerDlg::NextTurn() {
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> trycatch
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
 			Backup();
@@ -614,6 +618,14 @@ void CServerDlg::NextTurn() {
 
 }
 void CServerDlg::Receive() {
+	if (m_deck_pos >= 106) {
+		CString strMsg;
+		strMsg.Format(_T("type:CHAT|sender:시스템|content:현재 남은 타일이 없습니다."));
+
+		DisplayMessage(_T("시스템"), _T("현재 남은 타일이 없습니다."), 1);
+
+		return;
+	}
 	bool received = false;
 	for (int i = 1; i <= 3; i++) {
 		for (int j = 1; j <= 17; j++)
@@ -1314,6 +1326,8 @@ bool CServerDlg::IsExistingPublicTile(int tileId)
 	}
 	// 이번 턴에 내가 올린 타일임 (회수 가능)
 	return false;
+
+    
 }
 
 void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정

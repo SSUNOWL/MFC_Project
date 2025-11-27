@@ -71,11 +71,14 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
+<<<<<<< HEAD
 	ON_WM_GETMINMAXINFO()
 	ON_WM_DESTROY()
 	// [251127] 마우스 왼쪽 클릭 메시지 연결
 	ON_WM_LBUTTONDOWN()
 	ON_BN_CLICKED(IDC_BUTTON_SETBACK, &CClientDlg::OnBnClickedButtonSetback)
+=======
+>>>>>>> trycatch
 END_MESSAGE_MAP()
 
 
