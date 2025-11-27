@@ -1334,18 +1334,20 @@ void CServerDlg::OnClickedButtonSetback()
 	if (m_bCurrentTurn) {
 		CString strMsg;
 		strMsg.Format(_T("type:Setback|sender:시스템"));
-		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
-	
 		Setback();
+		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
 		Invalidate(FALSE);
 	}
 }
 void CServerDlg::Setback() {
-	for (int i = 1; i <= 3; i++)
-		for (int j = 1; j <= 17; j++)
-			m_private_tile[i][j] = m_old_private_tile[i][j];
-
-	for (int i = 1; i <= 13; i++) // 공용판은 항상 백업
+	if (m_bCurrentTurn) {
+		for (int i = 1; i <= 3; i++)
+			for (int j = 1; j <= 17; j++)
+				m_private_tile[i][j] = m_old_private_tile[i][j];
+	}
+	for (int i = 1; i <= 13; i++)
 		for (int j = 1; j <= 27; j++)
 			m_public_tile[i][j] = m_old_public_tile[i][j];
+	Invalidate(FALSE);
+
 }

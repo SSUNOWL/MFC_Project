@@ -243,7 +243,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             for (int i = 1; i <= 13; i++) // 공용판은 항상 Setback
                 for (int j = 1; j <= 27; j++)
                     m_pClientDlg->m_public_tile[i][j] = m_pClientDlg->m_old_public_tile[i][j];
-
+            m_pClientDlg->Invalidate(FALSE);
         }
         else if (strType == _T("EndGame")) {
             CString tmpString;
