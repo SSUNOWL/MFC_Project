@@ -679,7 +679,7 @@ void CClientDlg::OnBnClickedButtonPass()
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
 	}
 
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 }
 
 
@@ -694,7 +694,7 @@ void CClientDlg::OnBnClickedButtonReceive()
 		RequestMessage(strMsg);
 	}
 
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 }
 
 
@@ -1146,6 +1146,6 @@ void CClientDlg::OnBnClickedButtonSetback()
 		CString strMsg;
 		strMsg.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strMsg);
-		Invalidate(FALSE);
+		Invalidate(TRUE);
 	}
 }

@@ -648,7 +648,7 @@ void CServerDlg::OnBnClickedButtonReceive() {
 			Receive(); // 패 한장 받기
 			// 턴 종료
 			NextTurn();
-			Invalidate(FALSE);
+			Invalidate(TRUE);
 		}
 		
 		
@@ -876,7 +876,7 @@ void CServerDlg::OnBnClickedButtonPass()
 	{
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
 	}
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 }
 
 
@@ -895,7 +895,7 @@ void CServerDlg::OnBnClickedButtonPlay()
 			requestMsg.Format(_T("type:GameStarted"));
 			BroadcastMessage(requestMsg, 0);
 
-			Invalidate(FALSE);
+			Invalidate(TRUE);
 
 			AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
 		}
@@ -1354,7 +1354,7 @@ void CServerDlg::OnClickedButtonSetback()
 		strMsg.Format(_T("type:Setback|sender:시스템"));
 		Setback();
 		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
-		Invalidate(FALSE);
+		Invalidate(TRUE);
 	}
 }
 void CServerDlg::Setback() {
@@ -1366,6 +1366,6 @@ void CServerDlg::Setback() {
 	for (int i = 1; i <= 13; i++)
 		for (int j = 1; j <= 27; j++)
 			m_public_tile[i][j] = m_old_public_tile[i][j];
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 
 }
