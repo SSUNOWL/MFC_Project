@@ -552,7 +552,7 @@ void CServerDlg::PlayGame() {
 		AddLog(strLog);
 		m_deck_pos++;
 	}
-
+	Backup();
 	POSITION pos = m_clientSocketList.GetHeadPosition();
 
 	while (pos != NULL)
@@ -600,11 +600,6 @@ void CServerDlg::NextTurn() {
 		else { // 클라 -> 클라
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
-
-<<<<<<< HEAD
-=======
-
->>>>>>> trycatch
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
 			Backup();
@@ -645,7 +640,7 @@ void CServerDlg::Receive() {
 void CServerDlg::OnBnClickedButtonReceive() {
 	
 	if (m_bCurrentTurn == true) {
-		//Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
+		Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
 		Receive(); // 패 한장 받기
 		NextTurn(); // 다음 차례로 넘기기
 	}

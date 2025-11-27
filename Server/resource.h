@@ -75,12 +75,9 @@
 #define IDC_IPADDRESS_IP                1007
 #define IDC_BUTTON_SetBack2             1008
 #define IDC_BUTTON_PLAY                 1008
-<<<<<<< HEAD
 #define IDC_BUTTON1                     1009
-=======
 #define IDC_LIST1                       1009
 #define IDC_LIST_PLAYER                 1009
->>>>>>> trycatch
 
 // Next default values for new objects
 // 
