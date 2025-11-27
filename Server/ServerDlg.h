@@ -38,7 +38,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	afx_msg void OnBnClickedButton1();
 	afx_msg void OnBnClickedButtonSend();
 	CListBox m_list_log;
 	afx_msg void OnBnClickedButtonStart();
@@ -102,6 +101,7 @@ public:
 	void PlayGame();
 	void NextTurn();
 	void Receive();
+	void Backup();
 
 	void LoadImage();
 	bool LoadPngFromResource(CImage& img, UINT uResID);
@@ -148,4 +148,6 @@ private:
 
 	// [251127] 마우스 왼쪽 클릭 메시지 함수
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+public:
+	afx_msg void OnClickedButtonSetback();
 };

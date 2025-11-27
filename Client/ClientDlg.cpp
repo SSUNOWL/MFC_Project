@@ -74,6 +74,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_WM_GETMINMAXINFO()
 	// [251127] 마우스 왼쪽 클릭 메시지 연결
 	ON_WM_LBUTTONDOWN()
+	ON_BN_CLICKED(IDC_BUTTON_SETBACK, &CClientDlg::OnBnClickedButtonSetback)
 END_MESSAGE_MAP()
 
 
@@ -1119,3 +1120,14 @@ bool CClientDlg::IsExistingPublicTile(int tileId)
 	return false;
 }
 //==================================================
+
+
+void CClientDlg::OnBnClickedButtonSetback()
+{
+	if (m_bCurrentTurn) {
+		CString strMsg;
+		strMsg.Format(_T("type:SetbackReq|sender:Client"));
+		RequestMessage(strMsg);
+		Invalidate(FALSE);
+	}
+}

@@ -112,6 +112,8 @@ private:
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
 	int  GetTileImageIndex(const Tile& tile) const;
+public:
+	afx_msg void OnBnClickedButtonSetback();
 	// [251127] 마우스 클릭 이벤트 처리 함수 선언
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 };
