@@ -222,6 +222,8 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 if (received == true)
                     break;
             }
+            if (m_pClientDlg->m_bCurrentTurn)  
+                m_pClientDlg->m_bCurrentTurn = false;
             m_pClientDlg->Invalidate(FALSE);
         }
         else if (strType == _T("Backup")) {

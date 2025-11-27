@@ -692,7 +692,6 @@ void CClientDlg::OnBnClickedButtonReceive()
 		CString strMsg;
 		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
 		RequestMessage(strMsg);
-		m_bCurrentTurn = false;
 	}
 
 	Invalidate(FALSE);

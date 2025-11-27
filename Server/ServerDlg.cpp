@@ -585,6 +585,7 @@ void CServerDlg::NextTurn() {
 		ResponseMessage(strNext, pTurn); // 턴 넘긴 후
 		strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
 		BroadcastMessage(strBackup, 0);
+		Backup();
 	}
 	else {
 		if (m_posTurn == NULL) { // 서버로 턴이 넘어올 때
@@ -647,8 +648,9 @@ void CServerDlg::OnBnClickedButtonReceive() {
 			Receive(); // 패 한장 받기
 			// 턴 종료
 			NextTurn();
+			Invalidate(FALSE);
 		}
-		Invalidate(FALSE);
+		
 		
 		
 }
