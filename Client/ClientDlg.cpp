@@ -76,6 +76,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SEND, &CClientDlg::OnBnClickedButtonSend)
 	ON_BN_CLICKED(IDC_BUTTON_PASS, &CClientDlg::OnBnClickedButtonPass)
 	ON_BN_CLICKED(IDC_BUTTON_RECEIVE, &CClientDlg::OnBnClickedButtonReceive)
+	ON_WM_GETMINMAXINFO()
 END_MESSAGE_MAP()
 
 
