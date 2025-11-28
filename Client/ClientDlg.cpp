@@ -670,11 +670,7 @@ void CClientDlg::OnBnClickedButtonPass()
 	if (IsPublicTileValid()) // 공용판이 올바른 경우
 	{
 		// 타일 개수 최신화 요청 전송
-		CString requestMsg;
-		requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
-		RequestMessage(requestMsg);
-
-
+		UpdateSelfTileNum();
 		// 턴 종료
 		CString strMsg;
 		strMsg.Format(_T("type:EndTurn|sender:%s"), m_strName);
@@ -1201,4 +1197,19 @@ void CClientDlg::UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum)
             return; 
         }
     }
+}
+
+void CClientDlg::UpdateSelfTileNum() {
+	//--타일수 업데이트;
+	int nCount = 0;
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 18; j++)
+			if (m_private_tile[i][j].tileId != -1) nCount++;
+
+	m_intPrivateTileNum = nCount;
+
+	CString requestMsg;
+	requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
+	RequestMessage(requestMsg);
+
 }

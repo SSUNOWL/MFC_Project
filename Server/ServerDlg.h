@@ -35,6 +35,7 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult);
 	DECLARE_MESSAGE_MAP()
 
 public:
@@ -155,6 +156,6 @@ public:
 	afx_msg void OnClickedButtonSetback();
 	void UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum);
 	CListCtrl m_listPlayer;
-
+	void UpdateSelfTileNum();
 	void AddPlayerToList(CString strName, int nTileCount, CServiceSocket* pSocket = nullptr);
 };

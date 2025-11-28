@@ -168,11 +168,13 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
             m_pServerDlg->AddLog(strLog);
             CString strMsg;
-            
             CString strChat;
             strChat.Format(_T("%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
             m_pServerDlg->DisplayMessage(_T("시스템"), strChat, 1);
             // 다른 플레이어들에게 전달
+            strMsg.Format(_T("type:CHAT|sender:시스템|content:%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
+            m_pServerDlg->BroadcastMessage(strMsg, 0);
+
 
             if (m_pServerDlg)
             {
@@ -184,10 +186,6 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
                     CString strExistingName = m_pServerDlg->m_listPlayer.GetItemText(i, 0);
                     CString strExistingNum = m_pServerDlg->m_listPlayer.GetItemText(i, 1);
 
-                    // 방금 들어온 본인(m_strName)은 제외하고 보내거나, 
-                    // 클라이언트 로직이 중복을 허용하지 않는다면 다 보내도 됩니다.
-                    // 보통은 다 보내서 클라이언트가 리스트를 초기화하고 다시 채우게 하거나
-                    // 없는 사람만 추가하게 합니다. 여기서는 'AddPlayer' 메시지를 보냅니다.
                     DWORD_PTR pStoredSocket = m_pServerDlg->m_listPlayer.GetItemData(i);
 
                     // 메시지에 |id:주소값 추가
@@ -199,11 +197,11 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 }
             }
             CString strNewPlayerMsg;
-        strNewPlayerMsg.Format(_T("type:AddPlayer|name:%s|tilenum:0|id:%llu"), 
+            strNewPlayerMsg.Format(_T("type:AddPlayer|name:%s|tilenum:0|id:%llu"), 
             m_strName, (unsigned long long)this);
         
-        // 나를 제외한 모두에게 전송
-        m_pServerDlg->BroadcastMessage(strNewPlayerMsg, this);
+            // 나를 제외한 모두에게 전송
+            m_pServerDlg->BroadcastMessage(strNewPlayerMsg, this);
 
 
         }
@@ -273,6 +271,23 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             strMsg.Format(_T("type:Setback|sender:시스템"));
             m_pServerDlg->BroadcastMessage(strMsg, 0);
             m_pServerDlg->Setback();
+        }
+        else if (strType == _T("UpdateTileNum")) {
+            int nTilenum;
+            CString strTilenum;
+            if (messageMap.Lookup(_T("tilenum"), strTilenum));
+            nTilenum = _ttoi(strTilenum);
+            m_pServerDlg->UpdatePlayerTileCount(this, nTilenum);
+
+            CString strMsg;
+
+            strMsg.Format(_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
+                m_strName, nTilenum, (unsigned long long)this);
+
+            // ** 클라이언트는 자신의 소켓 주소를 모름 -> 모두에게 다시 보내주기
+            m_pServerDlg->BroadcastMessage(strMsg, 0);
+
+
         }
     }
 }

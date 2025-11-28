@@ -564,12 +564,15 @@ void CServerDlg::PlayGame() {
 		AddLog(strLog);
 		m_deck_pos++;
 	}
-<<<<<<< HEAD
+	Backup();
 	UpdatePlayerTileCount(0, 14);
 
-=======
-	Backup();
->>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
+	CString strUpdateTilenum;
+	strUpdateTilenum.Format(_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
+		m_strName, 14, (unsigned long long)0);
+	// 나를 제외한 모두에게 전송
+	BroadcastMessage(strUpdateTilenum, 0);
+
 	POSITION pos = m_clientSocketList.GetHeadPosition();
 
 	while (pos != NULL)
@@ -582,6 +585,17 @@ void CServerDlg::PlayGame() {
 			m_deck_pos++;
 		}
 		UpdatePlayerTileCount(pSocket, 14);
+
+
+		CString strUpdateTilenum;
+
+		strUpdateTilenum.Format(_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
+			m_strName, 14, (unsigned long long)pSocket);
+
+		// 나를 제외한 모두에게 전송
+		BroadcastMessage(strUpdateTilenum, 0);
+
+
 	}
 	//개인 타일판을 시각화하는 함수
 
@@ -601,39 +615,28 @@ void CServerDlg::NextTurn() {
 			
 		strNext.Format(_T("type:StartTurn|sender:시스템"));
 		ResponseMessage(strNext, pTurn); // 턴 넘긴 후
-		strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
-		BroadcastMessage(strBackup, 0);
-		Backup();
+		
 	}
 	else {
 		if (m_posTurn == NULL) { // 서버로 턴이 넘어올 때
-			m_bCurrentTurn = TRUE;
-
-			
+			m_bCurrentTurn = TRUE;			
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
 			//서버는 보낼필요 없음
-			Backup();
-			strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
-			BroadcastMessage(strBackup, 0);
 		}
 		else { // 클라 -> 클라
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
-			Backup();
-			strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
-			BroadcastMessage(strBackup, 0);
 		}
 	}
 	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
 	
 	DisplayMessage(_T("시스템"), strMsg, 1);
+
+	strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
+	BroadcastMessage(strBackup, 0);
+	Backup();
 
 }
 void CServerDlg::Receive() {
@@ -670,6 +673,8 @@ void CServerDlg::OnBnClickedButtonReceive() {
 			BroadcastMessage(strMsg, 0); // 전체 공용판 setback
 			Receive(); // 패 한장 받기
 			// 턴 종료
+			UpdateSelfTileNum();
+
 			NextTurn();
 			Invalidate(TRUE);
 		}
@@ -886,12 +891,8 @@ void CServerDlg::OnBnClickedButtonPass()
 	}
 
 	if (IsPublicTileValid()) // 공용판이 올바른 경우
-	{
-		// 모든 클라이언트에 타일 개수 최신화 요청 전송
-		CString requestMsg;
-		requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
-		BroadcastMessage(requestMsg, 0);
-
+	{	
+		UpdateSelfTileNum();
 		// 턴 종료
 		NextTurn();
 	}
@@ -1380,7 +1381,18 @@ void CServerDlg::OnClickedButtonSetback()
 		Invalidate(TRUE);
 	}
 }
-<<<<<<< HEAD
+void CServerDlg::Setback() {
+	if (m_bCurrentTurn) {
+		for (int i = 1; i <= 3; i++)
+			for (int j = 1; j <= 17; j++)
+				m_private_tile[i][j] = m_old_private_tile[i][j];
+	}
+	for (int i = 1; i <= 13; i++)
+		for (int j = 1; j <= 27; j++)
+			m_public_tile[i][j] = m_old_public_tile[i][j];
+	Invalidate(TRUE);
+
+}
 
 void CServerDlg::UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum)
 {
@@ -1407,12 +1419,7 @@ void CServerDlg::UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum)
 
 void CServerDlg::AddPlayerToList(CString strName, int nTileCount, CServiceSocket* pSocket)
 {
-	// 리스트 중복 체크 (선택 사항)
-	// 소켓 ID로 관리하므로 이름 중복은 허용해도 되지만, UI 혼동 방지를 위해 이름 체크 유지 가능
-	for (int i = 0; i < m_listPlayer.GetItemCount(); i++)
-	{
-		if (m_listPlayer.GetItemText(i, 0) == strName) return;
-	}
+
 
 	int nIndex = m_listPlayer.GetItemCount();
 
@@ -1427,17 +1434,22 @@ void CServerDlg::AddPlayerToList(CString strName, int nTileCount, CServiceSocket
 	// [핵심] 리스트 아이템의 데이터 공간에 소켓 포인터 주소를 저장
 	// 서버 본인인 경우 pSocket이 nullptr로 들어옴
 	m_listPlayer.SetItemData(nIndex, (DWORD_PTR)pSocket);
-=======
-void CServerDlg::Setback() {
-	if (m_bCurrentTurn) {
-		for (int i = 1; i <= 3; i++)
-			for (int j = 1; j <= 17; j++)
-				m_private_tile[i][j] = m_old_private_tile[i][j];
-	}
-	for (int i = 1; i <= 13; i++)
-		for (int j = 1; j <= 27; j++)
-			m_public_tile[i][j] = m_old_public_tile[i][j];
-	Invalidate(TRUE);
+}
+	
 
->>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
+void CServerDlg::UpdateSelfTileNum() {
+	//--타일수 업데이트;
+	int nCount = 0;
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 18; j++)
+			if (m_private_tile[i][j].tileId != -1) nCount++;
+
+	m_intPrivateTileNum = nCount;
+	//---전송로직
+	CString strUpdateTilenum;
+	strUpdateTilenum.Format(_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
+		m_strName, m_intPrivateTileNum, 0);
+	// 나를 제외한 모두에게 전송
+	BroadcastMessage(strUpdateTilenum, 0);
+	UpdatePlayerTileCount(0, m_intPrivateTileNum);
 }

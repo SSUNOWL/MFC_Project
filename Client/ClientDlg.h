@@ -19,7 +19,7 @@ struct Tile {
 	Color color;
 	int num;
 	bool isJoker;
-	int tileId =- 1;
+	int tileId = -1;
 };
 
 // CClientDlg 대화 상자
@@ -121,4 +121,5 @@ public:
 	void AddPlayerToList(CString strName, int nTileCount, DWORD_PTR nID = 0);
 	void UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum);
 	CListCtrl m_listPlayer;
+	void UpdateSelfTileNum();
 };

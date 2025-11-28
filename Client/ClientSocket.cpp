@@ -242,6 +242,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             if (m_pClientDlg->m_bCurrentTurn)  
                 m_pClientDlg->m_bCurrentTurn = false;
             m_pClientDlg->Invalidate(TRUE);
+            m_pClientDlg->UpdateSelfTileNum();
         }
         else if (strType == _T("Backup")) {
             if (m_pClientDlg->m_bCurrentTurn) { // 개인판은 내 턴일때만 복사해두면 됨
@@ -288,5 +289,21 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
 
             AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
         }
+
+        else if (strType == _T("UpdateTileNum")) {
+            int nTilenum;
+            CString strTilenum;
+            CString strID;
+            if (messageMap.Lookup(_T("tilenum"), strTilenum));
+            DWORD_PTR nID = 0;
+
+            nTilenum = _ttoi(strTilenum);
+            if (messageMap.Lookup(_T("id"), strID)) {
+                nID = (DWORD_PTR)_ttoi64(strID);
+            }
+            m_pClientDlg->UpdatePlayerTileCount(nID, nTilenum);
+
+
+            }
     }
 }
