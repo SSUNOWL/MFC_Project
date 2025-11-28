@@ -156,16 +156,55 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
         }
         else if (strType == _T("GetName")) {
             messageMap.Lookup(_T("name"), m_strName);
+
+
+            if (m_pServerDlg)
+            {
+                // [수정] this 포인터를 함께 전달하여 리스트에 등록
+                m_pServerDlg->AddPlayerToList(m_strName, 0, this);
+            }
+
             CString strLog;
             strLog.Format(_T("INFO: 클라이언트 %s 연결 수락됨 (현재 %d명)"), m_strName, m_pServerDlg->m_clientSocketList.GetCount());
             m_pServerDlg->AddLog(strLog);
             CString strMsg;
-            strMsg.Format(_T("type:Accept|sender:서버|name:%s|num:%d"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount());
-            m_pServerDlg->BroadcastMessage(strMsg, 0);
+            
             CString strChat;
             strChat.Format(_T("%s님이 입장하였습니다. 현재 %d명"), this->m_strName, m_pServerDlg->m_clientSocketList.GetCount() + 1);
             m_pServerDlg->DisplayMessage(_T("시스템"), strChat, 1);
             // 다른 플레이어들에게 전달
+
+            if (m_pServerDlg)
+            {
+                // 서버의 리스트 컨트롤(UI)이 가장 정확한 명단이므로 이를 순회
+                int nCount = m_pServerDlg->m_listPlayer.GetItemCount();
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    CString strExistingName = m_pServerDlg->m_listPlayer.GetItemText(i, 0);
+                    CString strExistingNum = m_pServerDlg->m_listPlayer.GetItemText(i, 1);
+
+                    // 방금 들어온 본인(m_strName)은 제외하고 보내거나, 
+                    // 클라이언트 로직이 중복을 허용하지 않는다면 다 보내도 됩니다.
+                    // 보통은 다 보내서 클라이언트가 리스트를 초기화하고 다시 채우게 하거나
+                    // 없는 사람만 추가하게 합니다. 여기서는 'AddPlayer' 메시지를 보냅니다.
+                    DWORD_PTR pStoredSocket = m_pServerDlg->m_listPlayer.GetItemData(i);
+
+                    // 메시지에 |id:주소값 추가
+                    CString strSyncMsg;
+                    strSyncMsg.Format(_T("type:AddPlayer|name:%s|tilenum:%s|id:%llu"),
+                        strExistingName, strExistingNum, (unsigned long long)pStoredSocket);
+
+                    m_pServerDlg->ResponseMessage(strSyncMsg, this);
+                }
+            }
+            CString strNewPlayerMsg;
+        strNewPlayerMsg.Format(_T("type:AddPlayer|name:%s|tilenum:0|id:%llu"), 
+            m_strName, (unsigned long long)this);
+        
+        // 나를 제외한 모두에게 전송
+        m_pServerDlg->BroadcastMessage(strNewPlayerMsg, this);
+
 
         }
         else if (strType == _T("EndTurn")) {

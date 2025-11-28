@@ -13,20 +13,20 @@
 // CServerDlg 대화 상자
 class CServerDlg : public CDialogEx
 {
-// 생성입니다.
+	// 생성입니다.
 public:
 	CServerDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
 	virtual ~CServerDlg();
 
-// 대화 상자 데이터입니다.
+	// 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_SERVER_DIALOG };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 지원입니다.
 
-// 구현입니다.
+	// 구현입니다.
 protected:
 	HICON m_hIcon;
 
@@ -43,16 +43,16 @@ public:
 	afx_msg void OnBnClickedButtonStart();
 	//  1. 소켓 객체 포인터
 	CListenSocket* m_pListenSocket;
-//  2. 연결된 클라이언트 소켓 목록
+	//  2. 연결된 클라이언트 소켓 목록
 	CList<CServiceSocket*, CServiceSocket*> m_clientSocketList;
-//  4. 소켓 콜백에서 호출될 핵심 관리 함수들
-	// 클라이언트 연결 수락 처리 (CListenSocket::OnAccept에서 호출)
+	//  4. 소켓 콜백에서 호출될 핵심 관리 함수들
+		// 클라이언트 연결 수락 처리 (CListenSocket::OnAccept에서 호출)
 	void ProcessAccept(CListenSocket* pListenSocket);
 
 	// 클라이언트 연결 종료 처리 (CServiceSocket::OnClose에서 호출)
 	void RemoveClient(CServiceSocket* pServiceSocket);
 
-	
+
 	void AddLog(const CString& strMsg);
 	void DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived);
 	CEdit m_edit_send;
@@ -73,7 +73,7 @@ public:
 		Color color;
 		int num;
 		bool isJoker;
-		int tileId=-1; // 나머지 1~106, 비어있는 판으로 표시하기 위해 -1로 초기화
+		int tileId = -1; // 나머지 1~106, 비어있는 판으로 표시하기 위해 -1로 초기화
 
 	};
 	// === [게임 상태: 서버 권위] ===
@@ -152,4 +152,8 @@ private:
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 public:
 	afx_msg void OnClickedButtonSetback();
+	void UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum);
+	CListCtrl m_listPlayer;
+
+	void AddPlayerToList(CString strName, int nTileCount, CServiceSocket* pSocket = nullptr);
 };
