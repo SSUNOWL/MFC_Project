@@ -118,4 +118,7 @@ public:
 	afx_msg void OnBnClickedButtonSetback();
 	// [251127] 마우스 클릭 이벤트 처리 함수 선언
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	void AddPlayerToList(CString strName, int nTileCount, DWORD_PTR nID = 0);
+	void UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum);
+	CListCtrl m_listPlayer;
 };

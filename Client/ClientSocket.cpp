@@ -202,6 +202,23 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             CString strMsg;
             strMsg.Format(_T("%s님이 입장하였습니다. 현재 %d명"), name, nNum);
             m_pClientDlg->DisplayMessage(_T("시스템"), strMsg, true);
+            m_pClientDlg->AddPlayerToList(name, 0, 0);
+        }
+        else if (strType == _T("AddPlayer")) {
+            CString strName, strTileNum, strID;
+            int nTileNum = 0;
+            DWORD_PTR nID = 0;
+
+            if (messageMap.Lookup(_T("name"), strName));
+            if (messageMap.Lookup(_T("tilenum"), strTileNum)) {
+                nTileNum = _ttoi(strTileNum);
+            }
+            if (messageMap.Lookup(_T("id"), strID)) {
+                nID = (DWORD_PTR)_ttoi64(strID);
+            }
+
+            // ID를 포함하여 리스트에 추가
+            m_pClientDlg->AddPlayerToList(strName, nTileNum, nID);
         }
         else if (strType == _T("ReceiveTile")) {
             CString strPos, strTileid;

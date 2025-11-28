@@ -61,6 +61,7 @@ void CClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_SEND, m_edit_send);
 	DDX_Control(pDX, IDC_LIST_MESSAGE, m_list_message);
 	DDX_Control(pDX, IDD_STATIC_STATUS, m_static_status);
+	DDX_Control(pDX, IDC_LIST_PLAYER, m_listPlayer);
 }
 
 BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
@@ -119,6 +120,12 @@ BOOL CClientDlg::OnInitDialog()
 	m_bisGameStarted = FALSE;
 
 	m_intPrivateTileNum = 0;
+
+
+	m_listPlayer.ModifyStyle(0, LVS_REPORT | LVS_NOCOLUMNHEADER);
+	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
+	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
+	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -1146,4 +1153,50 @@ void CClientDlg::OnBnClickedButtonSetback()
 		RequestMessage(strMsg);
 		Invalidate(FALSE);
 	}
+}
+
+
+void CClientDlg::AddPlayerToList(CString strName, int nTileCount, DWORD_PTR nID)
+{
+	// 1. ID 중복 체크 (이미 등록된 ID라면 무시)
+	// ID가 0이 아닌 경우에만 체크 (서버가 ID를 제대로 보냈다는 가정)
+	if (nID != 0)
+	{
+		for (int i = 0; i < m_listPlayer.GetItemCount(); i++)
+		{
+			if (m_listPlayer.GetItemData(i) == nID) return;
+		}
+	}
+
+	int nIndex = m_listPlayer.GetItemCount();
+
+	// 이름 삽입
+	m_listPlayer.InsertItem(nIndex, strName);
+
+	// 타일 수 설정
+	CString strCount;
+	strCount.Format(_T("%d"), nTileCount);
+	m_listPlayer.SetItemText(nIndex, 1, strCount);
+
+	// [핵심] 리스트 아이템에 ID(소켓 주소값) 숨겨두기
+	m_listPlayer.SetItemData(nIndex, nID);
+}
+
+void CClientDlg::UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum)
+{
+    int nCount = m_listPlayer.GetItemCount();
+
+    for (int i = 0; i < nCount; i++)
+    {
+        // 숨겨둔 ID 확인
+        if (m_listPlayer.GetItemData(i) == nID)
+        {
+            CString strNum;
+            strNum.Format(_T("%d"), nTileNum);
+            
+            // 1번 컬럼(TileNum) 갱신
+            m_listPlayer.SetItemText(i, 1, strNum);
+            return; 
+        }
+    }
 }
