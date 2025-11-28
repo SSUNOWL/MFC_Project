@@ -119,6 +119,9 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
 	ON_WM_DESTROY()
 	// [251127] 마우스 클릭 메시지 등록
 	ON_WM_LBUTTONDOWN()
+
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_PLAYER, &CServerDlg::OnNMCustomdrawListPlayer)
+
 END_MESSAGE_MAP()
 
 
@@ -167,6 +170,8 @@ BOOL CServerDlg::OnInitDialog()
 	m_nSelectedRow = -1;
 	m_nSelectedCol = -1;
 	m_bSelectedFromPublic = false;
+
+	m_pTurn = (CServiceSocket*) - 1;
 
 	m_listPlayer.ModifyStyle(0, LVS_REPORT | LVS_NOCOLUMNHEADER);
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
@@ -606,33 +611,45 @@ void CServerDlg::NextTurn() {
 	CString strMsg;
 	CString strNext;
 	CString strBackup;
+	CString strName;
 	if (m_bCurrentTurn == TRUE) { // 서버 -> 플레이어 1로 넘길 때
 		m_bCurrentTurn = FALSE;
 		m_posTurn = m_clientSocketList.GetHeadPosition();
-		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
+		m_pTurn = m_clientSocketList.GetNext(m_posTurn);
 
-		strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+		strName = m_pTurn->m_strName;
 			
 		strNext.Format(_T("type:StartTurn|sender:시스템"));
-		ResponseMessage(strNext, pTurn); // 턴 넘긴 후
+		ResponseMessage(strNext, m_pTurn); // 턴 넘긴 후
 		
 	}
 	else {
 		if (m_posTurn == NULL) { // 서버로 턴이 넘어올 때
 			m_bCurrentTurn = TRUE;			
-			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
+			strName = m_strName;
 			//서버는 보낼필요 없음
+			m_pTurn = 0;
 		}
 		else { // 클라 -> 클라
-			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
-			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+			m_pTurn = m_clientSocketList.GetNext(m_posTurn);
+			strName = m_pTurn->m_strName;
+
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
-			ResponseMessage(strNext, pTurn);
+			ResponseMessage(strNext, m_pTurn);
 		}
 	}
+
+	m_listPlayer.RedrawItems(0, m_listPlayer.GetItemCount() - 1);
+	m_listPlayer.UpdateWindow();
+
+	//현재 턴에 대한 정보를 모두에게 전달 (이름, 소켓 주소)
+	strMsg.Format(_T("type:UpdatePlayer|sender:시스템|name:%s|id:%llu"),
+		strName, (unsigned long long)m_pTurn);
 	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
-	
-	DisplayMessage(_T("시스템"), strMsg, 1);
+	//-----------
+	CString strLog;
+	strLog.Format(_T("%s의 턴이 시작되었습니다"), strName);
+	DisplayMessage(_T("시스템"), strLog, 1);
 
 	strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
 	BroadcastMessage(strBackup, 0);
@@ -1452,4 +1469,39 @@ void CServerDlg::UpdateSelfTileNum() {
 	// 나를 제외한 모두에게 전송
 	BroadcastMessage(strUpdateTilenum, 0);
 	UpdatePlayerTileCount(0, m_intPrivateTileNum);
+}
+
+void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
+{
+    NMLVCUSTOMDRAW* pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>(pNMHDR);
+
+    *pResult = CDRF_DODEFAULT;
+
+    // 1. 그리기 주기 시작 (PrePaint)
+    if (CDDS_PREPAINT == pLVCD->nmcd.dwDrawStage)
+    {
+        *pResult = CDRF_NOTIFYITEMDRAW; // 각 아이템(행)을 그릴 때 알림 요청
+    }
+    // 2. 각 아이템 그리기 전 (ItemPrePaint)
+    else if (CDDS_ITEMPREPAINT == pLVCD->nmcd.dwDrawStage)
+    {
+        // 현재 그리는 행의 ItemData(= CServiceSocket* 또는 0)를 가져옴
+        int nItem = (int)pLVCD->nmcd.dwItemSpec;
+        CServiceSocket* pRowSocket = (CServiceSocket*)m_listPlayer.GetItemData(nItem);
+        // 현재 턴인 소켓과 일치하면 색상 변경
+        // (서버의 턴일 경우 둘 다 nullptr이므로 서버 행이 강조됨)
+        if (pRowSocket == m_pTurn)
+        {
+            pLVCD->clrTextBk = RGB(255, 255, 200); // 연한 노란색 배경
+            pLVCD->clrText   = RGB(255, 0, 0);     // 빨간색 글씨
+        }
+        else
+        {
+            // 기본 색상 (흰 배경, 검은 글씨)
+            pLVCD->clrTextBk = RGB(255, 255, 255);
+            pLVCD->clrText   = RGB(0, 0, 0);
+        }
+
+        *pResult = CDRF_NEWFONT; // 폰트/색상 변경 적용
+    }
 }

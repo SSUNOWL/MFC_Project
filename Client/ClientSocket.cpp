@@ -304,6 +304,25 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pClientDlg->UpdatePlayerTileCount(nID, nTilenum);
 
 
+         }
+        else if (strType == _T("UpdatePlayer")) {
+
+            CString strID;
+            DWORD_PTR nID = 0;
+            CString strName;
+            if (messageMap.Lookup(_T("name"), strName));
+            if (messageMap.Lookup(_T("id"), strID)) {
+                nID = (DWORD_PTR)_ttoi64(strID);
             }
+            m_pClientDlg->m_pTurn = nID;
+
+            CString strContent;
+            strContent.Format(_T("%s의 턴이 시작되었습니다 %lld"), strName, nID);
+
+            m_pClientDlg->DisplayMessage(strName, strContent, TRUE);
+
+            m_pClientDlg->m_listPlayer.RedrawItems(0, m_pClientDlg->m_listPlayer.GetItemCount() - 1);
+            m_pClientDlg->m_listPlayer.UpdateWindow();
+        }
     }
 }

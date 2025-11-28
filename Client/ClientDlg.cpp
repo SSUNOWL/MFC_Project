@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	// [251127] 마우스 왼쪽 클릭 메시지 연결
 	ON_WM_LBUTTONDOWN()
 	ON_BN_CLICKED(IDC_BUTTON_SETBACK, &CClientDlg::OnBnClickedButtonSetback)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_PLAYER, &CClientDlg::OnNMCustomdrawListPlayer)
 END_MESSAGE_MAP()
 
 
@@ -121,6 +122,7 @@ BOOL CClientDlg::OnInitDialog()
 
 	m_intPrivateTileNum = 0;
 
+	m_pTurn = (DWORD_PTR)-1;
 
 	m_listPlayer.ModifyStyle(0, LVS_REPORT | LVS_NOCOLUMNHEADER);
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
@@ -1212,4 +1214,41 @@ void CClientDlg::UpdateSelfTileNum() {
 	requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
 	RequestMessage(requestMsg);
 
+}
+
+
+
+void CClientDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	NMLVCUSTOMDRAW* pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>(pNMHDR);
+
+	*pResult = CDRF_DODEFAULT;
+
+	// 1. 그리기 주기 시작
+	if (CDDS_PREPAINT == pLVCD->nmcd.dwDrawStage)
+	{
+		*pResult = CDRF_NOTIFYITEMDRAW; // 각 아이템 그릴 때 알림 요청
+	}
+	// 2. 각 아이템 그리기 전
+	else if (CDDS_ITEMPREPAINT == pLVCD->nmcd.dwDrawStage)
+	{
+		// 현재 행의 ItemData(=Player ID)를 가져옴
+		int nItem = (int)pLVCD->nmcd.dwItemSpec;
+		DWORD_PTR nRowID = m_listPlayer.GetItemData(nItem);
+
+		// 현재 턴인 ID와 일치하면 색상 변경 (노란 배경, 빨간 글씨)
+		if (nRowID == m_pTurn)
+		{
+			pLVCD->clrTextBk = RGB(255, 255, 200); // 연한 노란색 배경
+			pLVCD->clrText = RGB(255, 0, 0);       // 빨간색 글씨
+		}
+		else
+		{
+			// 기본 색상
+			pLVCD->clrTextBk = RGB(255, 255, 255);
+			pLVCD->clrText = RGB(0, 0, 0);
+		}
+
+		*pResult = CDRF_NEWFONT; // 변경 사항 적용
+	}
 }

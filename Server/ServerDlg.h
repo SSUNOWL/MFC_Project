@@ -158,4 +158,5 @@ public:
 	CListCtrl m_listPlayer;
 	void UpdateSelfTileNum();
 	void AddPlayerToList(CString strName, int nTileCount, CServiceSocket* pSocket = nullptr);
+	CServiceSocket* m_pTurn;
 };
