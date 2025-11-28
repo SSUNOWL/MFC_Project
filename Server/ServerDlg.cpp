@@ -564,8 +564,12 @@ void CServerDlg::PlayGame() {
 		AddLog(strLog);
 		m_deck_pos++;
 	}
+<<<<<<< HEAD
 	UpdatePlayerTileCount(0, 14);
 
+=======
+	Backup();
+>>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
 	POSITION pos = m_clientSocketList.GetHeadPosition();
 
 	while (pos != NULL)
@@ -588,7 +592,7 @@ void CServerDlg::NextTurn() {
 	CString strMsg;
 	CString strNext;
 	CString strBackup;
-	if (m_bCurrentTurn == TRUE) {
+	if (m_bCurrentTurn == TRUE) { // 서버 -> 플레이어 1로 넘길 때
 		m_bCurrentTurn = FALSE;
 		m_posTurn = m_clientSocketList.GetHeadPosition();
 		CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
@@ -599,24 +603,32 @@ void CServerDlg::NextTurn() {
 		ResponseMessage(strNext, pTurn); // 턴 넘긴 후
 		strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
 		BroadcastMessage(strBackup, 0);
+		Backup();
 	}
 	else {
-		if (m_posTurn == NULL) {
+		if (m_posTurn == NULL) { // 서버로 턴이 넘어올 때
 			m_bCurrentTurn = TRUE;
 
-			// [251127] 내 턴 시작 시점의 판 상태 백업] (이게 있어야 회수 규칙 작동)
-			CopyBoards();
+			
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), m_strName);
 			//서버는 보낼필요 없음
-			Backup(); // 서버의 개인판, 공용판 백업 (Setback을 위해)
+			Backup();
+			strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
+			BroadcastMessage(strBackup, 0);
 		}
-		else {
+		else { // 클라 -> 클라
 			CServiceSocket* pTurn = m_clientSocketList.GetNext(m_posTurn);
 			strMsg.Format(_T("type:CHAT|sender:시스템|content:%s의 턴이 시작되었습니다"), pTurn->m_strName);
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
 			strNext.Format(_T("type:StartTurn|sender:시스템"));
 			ResponseMessage(strNext, pTurn);
+			Backup();
+			strBackup.Format(_T("type:Backup|sender:시스템")); // 모두에게 Backup 메시지 발신 -> 현재 턴인 사람의 개인판과 공용판만 백업됨
+			BroadcastMessage(strBackup, 0);
 		}
 	}
 	BroadcastMessage(strMsg, 0); //현재 턴에 대한 정보는 모두에게 공유되어야함
@@ -652,12 +664,20 @@ void CServerDlg::Receive() {
 void CServerDlg::OnBnClickedButtonReceive() {
 	
 	if (m_bCurrentTurn == true) {
-		//Setback(); // 추후 Setback 구현되면 Setback -> 패 받기 -> 턴 넘기기로 진행
-		Receive(); // 패 한장 받기
-		NextTurn(); // 다음 차례로 넘기기
-	}
-	Invalidate(FALSE);
+			CString strMsg;
+			strMsg.Format(_T("type:Setback|sender:시스템"));
+			Setback();
+			BroadcastMessage(strMsg, 0); // 전체 공용판 setback
+			Receive(); // 패 한장 받기
+			// 턴 종료
+			NextTurn();
+			Invalidate(TRUE);
+		}
+		
+		
+		
 }
+
 
 bool CServerDlg::IsPublicTileValid()
 {
@@ -879,7 +899,7 @@ void CServerDlg::OnBnClickedButtonPass()
 	{
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
 	}
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 }
 
 
@@ -898,7 +918,7 @@ void CServerDlg::OnBnClickedButtonPlay()
 			requestMsg.Format(_T("type:GameStarted"));
 			BroadcastMessage(requestMsg, 0);
 
-			Invalidate(FALSE);
+			Invalidate(TRUE);
 
 			AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
 		}
@@ -1355,10 +1375,12 @@ void CServerDlg::OnClickedButtonSetback()
 	if (m_bCurrentTurn) {
 		CString strMsg;
 		strMsg.Format(_T("type:Setback|sender:시스템"));
+		Setback();
 		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
-		Invalidate(FALSE);
+		Invalidate(TRUE);
 	}
 }
+<<<<<<< HEAD
 
 void CServerDlg::UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum)
 {
@@ -1405,4 +1427,17 @@ void CServerDlg::AddPlayerToList(CString strName, int nTileCount, CServiceSocket
 	// [핵심] 리스트 아이템의 데이터 공간에 소켓 포인터 주소를 저장
 	// 서버 본인인 경우 pSocket이 nullptr로 들어옴
 	m_listPlayer.SetItemData(nIndex, (DWORD_PTR)pSocket);
+=======
+void CServerDlg::Setback() {
+	if (m_bCurrentTurn) {
+		for (int i = 1; i <= 3; i++)
+			for (int j = 1; j <= 17; j++)
+				m_private_tile[i][j] = m_old_private_tile[i][j];
+	}
+	for (int i = 1; i <= 13; i++)
+		for (int j = 1; j <= 27; j++)
+			m_public_tile[i][j] = m_old_public_tile[i][j];
+	Invalidate(TRUE);
+
+>>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
 }

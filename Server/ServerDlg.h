@@ -102,6 +102,7 @@ public:
 	void NextTurn();
 	void Receive();
 	void Backup();
+	void Setback();
 
 	void LoadImage();
 	bool LoadPngFromResource(CImage& img, UINT uResID);

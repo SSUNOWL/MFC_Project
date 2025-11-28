@@ -686,20 +686,22 @@ void CClientDlg::OnBnClickedButtonPass()
 		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
 	}
 
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 }
 
 
 void CClientDlg::OnBnClickedButtonReceive()
 {
 	if (m_bCurrentTurn) {
+		CString strSetback;
+		strSetback.Format(_T("type:SetbackReq|sender:Client"));
+		RequestMessage(strSetback);
 		CString strMsg;
 		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
 		RequestMessage(strMsg);
-		m_bCurrentTurn = false;
 	}
 
-	Invalidate(FALSE);
+	Invalidate(TRUE);
 }
 
 
@@ -1151,7 +1153,7 @@ void CClientDlg::OnBnClickedButtonSetback()
 		CString strMsg;
 		strMsg.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strMsg);
-		Invalidate(FALSE);
+		Invalidate(TRUE);
 	}
 }
 

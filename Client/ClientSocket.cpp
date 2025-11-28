@@ -185,7 +185,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             strMsg.Format(_T("%d %d"), nTileid,  m_pClientDlg->m_private_tile[nX][nY].tileId);
             m_pClientDlg->DisplayMessage(0, strMsg, 1);
             //개인 타일판을 시각화하는 함수
-            m_pClientDlg->Invalidate(FALSE);
+            m_pClientDlg->Invalidate(TRUE);
         }
         else if (strType == _T("StartTurn")) {
             // [251127] 내 턴이 시작될 때 현재 상태를 'Old'에 백업해둬야 기준점이 생김
@@ -239,7 +239,9 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 if (received == true)
                     break;
             }
-            m_pClientDlg->Invalidate(FALSE);
+            if (m_pClientDlg->m_bCurrentTurn)  
+                m_pClientDlg->m_bCurrentTurn = false;
+            m_pClientDlg->Invalidate(TRUE);
         }
         else if (strType == _T("Backup")) {
             if (m_pClientDlg->m_bCurrentTurn) { // 개인판은 내 턴일때만 복사해두면 됨
@@ -260,7 +262,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             for (int i = 1; i <= 13; i++) // 공용판은 항상 Setback
                 for (int j = 1; j <= 27; j++)
                     m_pClientDlg->m_public_tile[i][j] = m_pClientDlg->m_old_public_tile[i][j];
-
+            m_pClientDlg->Invalidate(TRUE);
         }
         else if (strType == _T("EndGame")) {
             CString tmpString;

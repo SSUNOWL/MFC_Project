@@ -78,7 +78,10 @@
 #define IDC_BUTTON1                     1009
 #define IDC_LIST1                       1009
 #define IDC_LIST_PLAYER                 1009
+<<<<<<< HEAD
 #define IDC_LIST2                       1010
+=======
+>>>>>>> 9237c663e13a88c97b182573746f3aadf445a755
 
 // Next default values for new objects
 // 
