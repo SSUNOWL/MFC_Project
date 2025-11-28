@@ -324,5 +324,12 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pClientDlg->m_listPlayer.RedrawItems(0, m_pClientDlg->m_listPlayer.GetItemCount() - 1);
             m_pClientDlg->m_listPlayer.UpdateWindow();
         }
+        else if (strType == _T("Reject")) {
+            m_pClientDlg->MessageBox(_T("방이 가득 찼습니다.", MB_OK));
+            Close();
+
+            // 3. UI 상태 업데이트 (연결 끊김 처리)
+            m_pClientDlg->m_static_status.SetWindowText(_T("서버 접속이 거부되었습니다."));
+        }
     }
 }

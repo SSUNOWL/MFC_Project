@@ -157,6 +157,13 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
         else if (strType == _T("GetName")) {
             messageMap.Lookup(_T("name"), m_strName);
 
+            if (m_pServerDlg->m_clientSocketList.GetSize() > 3) {
+                CString strMsg;
+                strMsg.Format(_T("type:Reject|sender:╫ц╫╨еш"));
+                
+                m_pServerDlg->ResponseMessage(strMsg, this);
+                return;
+            }
 
             if (m_pServerDlg)
             {
