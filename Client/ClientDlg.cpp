@@ -1201,6 +1201,7 @@ void CClientDlg::UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum)
     }
 }
 
+// 개인 타일수 업데이트 이후 타일수 업데이트 해주세요~ 요청
 void CClientDlg::UpdateSelfTileNum() {
 	//--타일수 업데이트;
 	int nCount = 0;
@@ -1217,7 +1218,7 @@ void CClientDlg::UpdateSelfTileNum() {
 }
 
 
-
+// player list 그리기
 void CClientDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NMLVCUSTOMDRAW* pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>(pNMHDR);

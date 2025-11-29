@@ -181,9 +181,9 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
 
             m_pClientDlg->m_private_tile[nX][nY] = m_pClientDlg->ParseIdtoTile(nTileid);
             // 로그 출력용
-            CString strMsg;
+            /*CString strMsg;
             strMsg.Format(_T("%d %d"), nTileid,  m_pClientDlg->m_private_tile[nX][nY].tileId);
-            m_pClientDlg->DisplayMessage(0, strMsg, 1);
+            m_pClientDlg->DisplayMessage(0, strMsg, 1);*/
             //개인 타일판을 시각화하는 함수
             m_pClientDlg->Invalidate(TRUE);
         }
