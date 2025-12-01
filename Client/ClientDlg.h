@@ -110,7 +110,7 @@ public:
 	// [251127] 기존 공용판에 있던 타일인지 검사하는 함수
 	bool IsExistingPublicTile(int tileId);
 private:
-	bool IsRowValid(int);
+	bool IsRowValid(int row, int* sum);
 	bool IsRunValid(std::list<Tile> tileChunk);
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
@@ -125,4 +125,9 @@ public:
 	void UpdateSelfTileNum();
 	DWORD_PTR m_pTurn;
 	int m_nSubmitTileNum;
+
+	// 첫 번째 제출 검증 관련 함수
+	bool IsChunkMixed(const std::list<Tile>& tileChunk, bool* isAllNew);
+	int CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun);
+	bool m_bFirstSubmit; // 첫 번째 제출 여부
 };
