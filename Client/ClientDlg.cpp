@@ -121,6 +121,7 @@ BOOL CClientDlg::OnInitDialog()
 	m_bisGameStarted = FALSE;
 
 	m_intPrivateTileNum = 0;
+	m_bFirstSubmit = true;
 
 	m_pTurn = (DWORD_PTR)-1;
 
@@ -470,18 +471,28 @@ bool CClientDlg::IsPublicTileValid()
 	공용판이 올바른지 공용판의 각 행 별로 검사하는 메소드.
 	*/
 
+	int sum = 0;
+
 	for (int i = 1; i <= 13; i++) // 공용판의 각 행에 대해 반복
 	{
-		if (!IsRowValid(i))
+		if (!IsRowValid(i, &sum))
 		{
 			return false;
 		}
 	}
 
+	// 첫 번째 제출 시, 총합이 30 미만인지 검사
+	if (m_bFirstSubmit && (sum < 30))
+	{
+		AfxMessageBox(_T("첫 번째 제출 시, 타일의 총합이 30 이상이어야 합니다."));
+
+		return false;
+	}
+
 	return true;
 }
 
-bool CClientDlg::IsRowValid(int row)
+bool CClientDlg::IsRowValid(int row, int* sum)
 {
 	/*
 	특정 행의 타일 조합들이 모두 유효한지 검사
@@ -493,6 +504,7 @@ bool CClientDlg::IsRowValid(int row)
 	청크(chunk)는 행에서 인접한 타일들의 묶음으로, 조건 검사의 단위임
 	*/
 	std::list<Tile> tileChunk; // 현재 검사 중인 타일 그룹
+	bool isAllNew = false;
 
 	for (int i = 1; i <= 27; i++)
 	{
@@ -506,16 +518,38 @@ bool CClientDlg::IsRowValid(int row)
 				continue;
 			}
 
-			// chunk 검증
-			if (IsRunValid(tileChunk) || IsGroupValid(tileChunk))
+			// 첫 번째 제출 시, 기존 타일과 새 타일이 섞여있는지 검사
+			if (m_bFirstSubmit && IsChunkMixed(tileChunk, &isAllNew))
 			{
+				AfxMessageBox(_T("첫 번째 제출 시, 기존 타일과 새 타일이 섞여 있을 수 없습니다."));
+
+				return false;
+			}
+
+			// chunk 검사
+			if (IsRunValid(tileChunk)) // run인 경우
+			{
+				if (m_bFirstSubmit && isAllNew)
+				{
+					*sum += CalculateChunkValue(tileChunk, true);
+				}
+
 				tileChunk.clear();
 				continue;
 			}
-			else
+
+			if (IsGroupValid(tileChunk)) // group인 경우
 			{
-				return false;
+				if (m_bFirstSubmit && isAllNew)
+				{
+					*sum += CalculateChunkValue(tileChunk, false);
+				}
+
+				tileChunk.clear();
+				continue;
 			}
+
+			return false;
 		}
 		else
 		{
@@ -660,6 +694,114 @@ bool CClientDlg::IsGroupValid(std::list<Tile> tileChunk)
 	return true;
 }
 
+
+// 첫 번째 제출 시 chunk에 기존 타일과 새 타일이 섞여있는지 검사
+bool CClientDlg::IsChunkMixed(const std::list<Tile>& tileChunk, bool* isAllNew)
+{
+	bool hasOldTile = false;
+	bool hasNewTile = false;
+
+	for (const Tile& t : tileChunk)
+	{
+		if (IsExistingPublicTile(t.tileId))
+		{
+			hasOldTile = true;
+		}
+		else
+		{
+			hasNewTile = true;
+		}
+
+		// 둘 다 있으면 섞여 있는 것
+		if (hasOldTile && hasNewTile)
+		{
+			return true;
+		}
+	}
+
+	// 섞여 있지 않은 경우에, 전부 새로운 타일인지 여부 설정
+	if (hasNewTile)
+	{
+		*isAllNew = true;
+	}
+	else
+	{
+		*isAllNew = false;
+	}
+
+	return false;
+}
+
+// Run 또는 Group의 타일 값 합계 계산 (조커 포함)
+int CClientDlg::CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun)
+{
+	int totalValue = 0;
+
+	if (isRun)
+	{
+		// Run의 경우: 같은 색의 연속된 숫자
+		int startNum = -1;
+		bool firstFound = false;
+
+		for (const Tile& t : tileChunk)
+		{
+			if (!t.isJoker && !firstFound)
+			{
+				startNum = t.num;
+				firstFound = true;
+				break;
+			}
+		}
+
+		// 각 위치의 숫자 결정하여 합산
+		int expectedNum = startNum - 1;
+		for (const Tile& t : tileChunk)
+		{
+			if (t.isJoker)
+			{
+				// 조커는 expectedNum 값을 가짐
+				totalValue += expectedNum;
+				expectedNum = expectedNum + 1;
+			}
+			else
+			{
+				totalValue += t.num;
+				expectedNum = t.num + 1;
+			}
+		}
+	}
+	else
+	{
+		// Group의 경우: 같은 숫자의 다른 색
+		// 일반 타일의 숫자 찾기
+		int groupNum = -1;
+		for (const Tile& t : tileChunk)
+		{
+			if (!t.isJoker)
+			{
+				groupNum = t.num;
+				break;
+			}
+		}
+
+		// 모든 타일이 같은 숫자 값을 가짐
+		for (const Tile& t : tileChunk)
+		{
+			if (t.isJoker)
+			{
+				totalValue += groupNum;
+			}
+			else
+			{
+				totalValue += t.num;
+			}
+		}
+	}
+
+	return totalValue;
+}
+
+
 void CClientDlg::OnBnClickedButtonPass()
 {
 	if (!m_bCurrentTurn) {
@@ -668,9 +810,20 @@ void CClientDlg::OnBnClickedButtonPass()
 		return;
 	}
 
+	if (m_nSubmitTileNum == 0) {
+		AfxMessageBox(_T("제출한 타일이 없습니다.", MB_OK));
+
+		return;
+	}
+
 	//유효성 검증코드
 	if (IsPublicTileValid()) // 공용판이 올바른 경우
 	{
+		if (m_bFirstSubmit)
+		{
+			m_bFirstSubmit = false; // 첫 제출 완료
+		}
+
 		// 타일 개수 최신화 요청 전송
 		UpdateSelfTileNum();
 		// 턴 종료
@@ -1020,6 +1173,26 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 
 		// --- 서버 동기화 전송 ---
 
+		// 타일 이동 방향에 따른 m_nSubmitTileNum 증감
+		// 개인판 -> 공용판 이동 (타일 제출)
+		if (!m_bSelectedFromPublic && bClickedPublic)
+		{
+			// 빈 칸이 아닌 실제 타일을 제출하는 경우만 카운트
+			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			{
+				m_nSubmitTileNum++;
+			}
+		}
+		// 공용판 -> 개인판 이동 (타일 회수)
+		else if (m_bSelectedFromPublic && !bClickedPublic)
+		{
+			// 빈 칸이 아닌 실제 타일을 회수하는 경우만 카운트
+			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			{
+				m_nSubmitTileNum--;
+			}
+		}
+
 		// 1. 원래 있던 위치(Source)가 공용판이었다면 업데이트 전송
 		if (m_bSelectedFromPublic)
 		{
@@ -1152,6 +1325,8 @@ void CClientDlg::OnBnClickedButtonSetback()
 		strMsg.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strMsg);
 		Invalidate(TRUE);
+
+		m_nSubmitTileNum = 0;
 	}
 }
 

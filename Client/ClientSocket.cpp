@@ -191,6 +191,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             // [251127] 내 턴이 시작될 때 현재 상태를 'Old'에 백업해둬야 기준점이 생김
             m_pClientDlg->CopyBoards();
             m_pClientDlg->m_bCurrentTurn = true;
+            m_pClientDlg->m_nSubmitTileNum = 0;
         }
         else if (strType == _T("Accept")) {
             CString name, strNum;

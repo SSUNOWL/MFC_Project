@@ -1,5 +1,4 @@
-﻿
-// ServerDlg.h: 헤더 파일
+﻿// ServerDlg.h: 헤더 파일
 //
 
 #pragma once
@@ -144,7 +143,7 @@ public:
 	void CopyBoards(); // 턴 시작 시 현재 상태 백업
 
 private:
-	bool IsRowValid(int);
+	bool IsRowValid(int row, int* sum);
 	bool IsRunValid(std::list<Tile> tileChunk);
 	bool IsGroupValid(std::list<Tile> tileChunk);
 	void DrawMyTiles(CDC& dc);
@@ -152,6 +151,11 @@ private:
 
 	// [251127] 마우스 왼쪽 클릭 메시지 함수
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+
+	// 첫 번째 제출 검증 관련 함수
+	bool IsChunkMixed(const std::list<Tile>& tileChunk, bool* isAllNew);
+	int CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun);
+
 public:
 	afx_msg void OnClickedButtonSetback();
 	void UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum);
@@ -159,4 +163,6 @@ public:
 	void UpdateSelfTileNum();
 	void AddPlayerToList(CString strName, int nTileCount, CServiceSocket* pSocket = nullptr);
 	CServiceSocket* m_pTurn;
+	int m_nSubmitTileNum;
+	bool m_bFirstSubmit; // 첫 번째 제출 여부
 };
