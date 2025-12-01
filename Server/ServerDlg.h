@@ -159,4 +159,5 @@ public:
 	void UpdateSelfTileNum();
 	void AddPlayerToList(CString strName, int nTileCount, CServiceSocket* pSocket = nullptr);
 	CServiceSocket* m_pTurn;
+	int m_nSubmitTileNum;
 };

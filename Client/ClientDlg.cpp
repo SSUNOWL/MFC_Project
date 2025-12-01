@@ -668,6 +668,12 @@ void CClientDlg::OnBnClickedButtonPass()
 		return;
 	}
 
+	if (m_nSubmitTileNum == 0) {
+		AfxMessageBox(_T("제출한 타일이 없습니다.", MB_OK));
+
+		return;
+	}
+
 	//유효성 검증코드
 	if (IsPublicTileValid()) // 공용판이 올바른 경우
 	{
@@ -1020,6 +1026,26 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 
 		// --- 서버 동기화 전송 ---
 
+		// 타일 이동 방향에 따른 m_nSubmitTileNum 증감
+		// 개인판 -> 공용판 이동 (타일 제출)
+		if (!m_bSelectedFromPublic && bClickedPublic)
+		{
+			// 빈 칸이 아닌 실제 타일을 제출하는 경우만 카운트
+			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			{
+				m_nSubmitTileNum++;
+			}
+		}
+		// 공용판 -> 개인판 이동 (타일 회수)
+		else if (m_bSelectedFromPublic && !bClickedPublic)
+		{
+			// 빈 칸이 아닌 실제 타일을 회수하는 경우만 카운트
+			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			{
+				m_nSubmitTileNum--;
+			}
+		}
+
 		// 1. 원래 있던 위치(Source)가 공용판이었다면 업데이트 전송
 		if (m_bSelectedFromPublic)
 		{
@@ -1152,6 +1178,8 @@ void CClientDlg::OnBnClickedButtonSetback()
 		strMsg.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strMsg);
 		Invalidate(TRUE);
+
+		m_nSubmitTileNum = 0;
 	}
 }
 

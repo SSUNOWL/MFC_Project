@@ -124,4 +124,5 @@ public:
 	CListCtrl m_listPlayer;
 	void UpdateSelfTileNum();
 	DWORD_PTR m_pTurn;
+	int m_nSubmitTileNum;
 };

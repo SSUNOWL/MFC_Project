@@ -625,10 +625,11 @@ void CServerDlg::NextTurn() {
 	}
 	else {
 		if (m_posTurn == NULL) { // 서버로 턴이 넘어올 때
-			m_bCurrentTurn = TRUE;			
+			m_bCurrentTurn = TRUE;
 			strName = m_strName;
 			//서버는 보낼필요 없음
 			m_pTurn = 0;
+			m_nSubmitTileNum = 0;
 		}
 		else { // 클라 -> 클라
 			m_pTurn = m_clientSocketList.GetNext(m_posTurn);
@@ -694,10 +695,7 @@ void CServerDlg::OnBnClickedButtonReceive() {
 
 			NextTurn();
 			Invalidate(TRUE);
-		}
-		
-		
-		
+	}	
 }
 
 
@@ -904,6 +902,12 @@ void CServerDlg::OnBnClickedButtonPass()
 	if (!m_bCurrentTurn) {
 		AfxMessageBox(_T("턴이 돌아오지 않았습니다.", MB_OK));
 
+		return;
+	}
+
+	if (m_nSubmitTileNum == 0) {
+		AfxMessageBox(_T("제출한 타일이 없습니다.", MB_OK));
+		
 		return;
 	}
 
@@ -1241,6 +1245,26 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			? &m_public_tile[nRow][nCol]
 			: &m_private_tile[nRow][nCol];
 
+		// 타일 이동 방향에 따른 m_nSubmitTileNum 증감
+		// 개인판 -> 공용판 이동 (타일 제출)
+		if (!m_bSelectedFromPublic && bClickedPublic)
+		{
+			// 빈 칸이 아닌 실제 타일을 제출하는 경우만 카운트
+			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			{
+				m_nSubmitTileNum++;
+			}
+		}
+		// 공용판 -> 개인판 이동 (타일 회수)
+		else if (m_bSelectedFromPublic && !bClickedPublic)
+		{
+			// 빈 칸이 아닌 실제 타일을 회수하는 경우만 카운트
+			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			{
+				m_nSubmitTileNum--;
+			}
+		}
+
 		Tile temp = *pTargetTile;
 		*pTargetTile = *pSourceTile;
 		*pSourceTile = temp;
@@ -1409,6 +1433,7 @@ void CServerDlg::Setback() {
 			m_public_tile[i][j] = m_old_public_tile[i][j];
 	Invalidate(TRUE);
 
+	m_nSubmitTileNum = 0;
 }
 
 void CServerDlg::UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum)
