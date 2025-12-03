@@ -685,7 +685,7 @@ void CServerDlg::Receive() {
 
 void CServerDlg::OnBnClickedButtonReceive() {
 	
-	if (m_bCurrentTurn == true) {
+	if (m_bCurrentTurn == true && m_intPrivateTileNum!=51) {
 			CString strMsg;
 			strMsg.Format(_T("type:Setback|sender:시스템"));
 			Setback();
@@ -696,7 +696,8 @@ void CServerDlg::OnBnClickedButtonReceive() {
 
 			NextTurn();
 			Invalidate(TRUE);
-	}	
+			return;
+	}
 }
 
 

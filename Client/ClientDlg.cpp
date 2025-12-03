@@ -843,16 +843,18 @@ void CClientDlg::OnBnClickedButtonPass()
 
 void CClientDlg::OnBnClickedButtonReceive()
 {
-	if (m_bCurrentTurn) {
+	if (m_bCurrentTurn && m_intPrivateTileNum!=51) {
 		CString strSetback;
 		strSetback.Format(_T("type:SetbackReq|sender:Client"));
 		RequestMessage(strSetback);
 		CString strMsg;
 		strMsg.Format(_T("type:Receive|sender:%s"), m_strName);
 		RequestMessage(strMsg);
+		Invalidate(TRUE);
+		return;
 	}
 
-	Invalidate(TRUE);
+	return;
 }
 
 
