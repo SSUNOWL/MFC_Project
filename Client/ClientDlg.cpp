@@ -321,6 +321,16 @@ void CClientDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 void CClientDlg::OnBnClickedButtonConnect()
 {
+	if (m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 이미 게임이 진행 중입니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+	
+		return;
+	}
+
 	CAddressDlg pAddressDlg;
 
 
@@ -485,7 +495,11 @@ bool CClientDlg::IsPublicTileValid()
 	// 첫 번째 제출 시, 총합이 30 미만인지 검사
 	if (m_bFirstSubmit && (sum < 30))
 	{
-		AfxMessageBox(_T("첫 번째 제출 시, 타일의 총합이 30 이상이어야 합니다."));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 첫 번째 제출 시, 타일의 총합이 30 이상이어야 합니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 
 		return false;
 	}
@@ -522,7 +536,11 @@ bool CClientDlg::IsRowValid(int row, int* sum)
 			// 첫 번째 제출 시, 기존 타일과 새 타일이 섞여있는지 검사
 			if (m_bFirstSubmit && IsChunkMixed(tileChunk, &isAllNew))
 			{
-				AfxMessageBox(_T("첫 번째 제출 시, 기존 타일과 새 타일이 섞여 있을 수 없습니다."));
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 첫 번째 제출 시, 기존 타일과 새 타일이 섞여 있을 수 없습니다."));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+				Invalidate(TRUE);
 
 				return false;
 			}
@@ -805,14 +823,32 @@ int CClientDlg::CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun
 
 void CClientDlg::OnBnClickedButtonPass()
 {
+	if (!m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+
+		return;
+	}
+
 	if (!m_bCurrentTurn) {
-		AfxMessageBox(_T("턴이 돌아오지 않았습니다.", MB_OK));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 턴이 돌아오지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 
 		return;
 	}
 
 	if (m_nSubmitTileNum == 0) {
-		AfxMessageBox(_T("제출한 타일이 없습니다.", MB_OK));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 제출한 타일이 없습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 
 		return;
 	}
@@ -835,7 +871,11 @@ void CClientDlg::OnBnClickedButtonPass()
 	}
 	else // 공용판이 올바르지 않은 경우
 	{
-		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 공용판이 올바르지 않습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 	}
 
 	Invalidate(TRUE);
@@ -844,6 +884,26 @@ void CClientDlg::OnBnClickedButtonPass()
 
 void CClientDlg::OnBnClickedButtonReceive()
 {
+	if (!m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+
+		return;
+	}
+
+	if (!m_bCurrentTurn) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 턴이 돌아오지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+
+		return;
+	}
+
 	if (m_bCurrentTurn && m_intPrivateTileNum!=51) {
 		CString strSetback;
 		strSetback.Format(_T("type:SetbackReq|sender:Client"));
@@ -1132,7 +1192,12 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		// 1. 내 턴이 아닐 때: 제출 불가 (동일)
 		if (!m_bCurrentTurn && bClickedPublic)
 		{
-			AfxMessageBox(_T("내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
+			CString strTmpLog;
+			strTmpLog.Format(_T("[INFO] 내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
+			m_list_message.AddString(strTmpLog);
+			m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+			Invalidate(TRUE);
+
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
@@ -1145,9 +1210,13 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			// 원래부터 공용판에 있던 타일인지 검사
 			if (IsExistingPublicTile(selectedTile.tileId))
 			{
-				AfxMessageBox(_T("기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
-				m_bIsSelected = false;
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
 				Invalidate(TRUE);
+
+				m_bIsSelected = false;
 				return;
 			}
 
@@ -1323,6 +1392,16 @@ void CClientDlg::OnDestroy()
 
 void CClientDlg::OnBnClickedButtonSetback()
 {
+	if (!m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+
+		return;
+	}
+
 	if (m_bCurrentTurn) {
 		CString strMsg;
 		strMsg.Format(_T("type:SetbackReq|sender:Client"));
@@ -1330,6 +1409,13 @@ void CClientDlg::OnBnClickedButtonSetback()
 		Invalidate(TRUE);
 
 		m_nSubmitTileNum = 0;
+	}
+	else {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 턴이 돌아오지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 	}
 }
 

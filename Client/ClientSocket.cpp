@@ -277,7 +277,17 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 // 게임 종료
                 m_pClientDlg->m_bisGameStarted = FALSE;
 
-                AfxMessageBox(_T("플레이어 탈주로 게임을 종료합니다.", MB_OK));
+                for (int i = 0; i < 3; i++) {
+                    CString strTmpLog;
+                    strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
+                    m_pClientDlg->m_list_message.AddString(strTmpLog);
+                    m_pClientDlg->m_list_message.SetTopIndex(m_pClientDlg->m_list_message.GetCount() - 1);
+                    //m_pClientDlg->Invalidate(TRUE);
+                    m_pClientDlg->UpdateWindow();
+
+                    Sleep(1000);
+                }
+
                 // 다이얼로그 닫기
                 if (m_pClientDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
                 {
@@ -287,8 +297,12 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
         }
         else if (strType == _T("GameStarted")) {
 			m_pClientDlg->m_bisGameStarted = TRUE;
-
-            AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
+            
+            CString strTmpLog;
+            strTmpLog.Format(_T("[INFO] 게임이 시작되었습니다."));
+            m_pClientDlg->m_list_message.AddString(strTmpLog);
+            m_pClientDlg->m_list_message.SetTopIndex(m_pClientDlg->m_list_message.GetCount() - 1);
+            m_pClientDlg->Invalidate(TRUE);
         }
 
         else if (strType == _T("UpdateTileNum")) {
