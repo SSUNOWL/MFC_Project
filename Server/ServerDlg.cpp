@@ -178,6 +178,7 @@ BOOL CServerDlg::OnInitDialog()
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
 	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
 	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	InitControls();
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -1675,4 +1676,57 @@ void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
 
         *pResult = CDRF_NEWFONT; // 폰트/색상 변경 적용
     }
+}
+
+void CServerDlg::InitControls() {
+	/// [PLAY / 제출] 버튼
+		if (GetDlgItem(IDC_BUTTON_PLAY)) {
+			GetDlgItem(IDC_BUTTON_PLAY)->MoveWindow(720, 555, 80, 40);
+		}
+	// [PASS / 턴넘김] 버튼
+	if (GetDlgItem(IDC_BUTTON_PASS)) {
+		GetDlgItem(IDC_BUTTON_PASS)->MoveWindow(810, 555, 80, 40);
+	}
+	// [RECEIVE / 타일받기] 버튼
+	if (GetDlgItem(IDC_BUTTON_RECEIVE)) {
+		GetDlgItem(IDC_BUTTON_RECEIVE)->MoveWindow(720, 605, 80, 40);
+	}
+	// [SETBACK / 되돌리기] 버튼
+	if (GetDlgItem(IDC_BUTTON_SetBack)) {
+		GetDlgItem(IDC_BUTTON_SetBack)->MoveWindow(810, 605, 80, 40);
+	}
+
+	// [플레이어 목록] (버튼들 옆에 배치)
+	if (GetDlgItem(IDC_LIST_PLAYER)) {
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(900, 555, 150, 90);
+	}
+
+
+	// -------------------------------------------------------------
+	// 3. [오른쪽 상단] 공용판(width=980) 옆 빈 공간 (x > 1000)
+	// -------------------------------------------------------------
+
+	// [시작] 버튼 (가장 잘 보이게 위쪽)
+	if (GetDlgItem(IDC_BUTTON_START)) {
+		GetDlgItem(IDC_BUTTON_START)->MoveWindow(1000, 35, 250, 40);
+	}
+
+	// [채팅/메시지 목록]
+	if (GetDlgItem(IDC_LIST_MESSAGE)) {
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(1000, 85, 250, 200);
+	}
+
+	// [시스템 로그 목록]
+	if (GetDlgItem(IDC_LIST_LOG)) {
+		GetDlgItem(IDC_LIST_LOG)->MoveWindow(1000, 295, 250, 150);
+	}
+
+	// [채팅 입력창]
+	if (GetDlgItem(IDC_EDIT_SEND)) {
+		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(1000, 455, 180, 30);
+	}
+	// [보내기 버튼]
+	if (GetDlgItem(IDC_BUTTON_SEND)) {
+		GetDlgItem(IDC_BUTTON_SEND)->MoveWindow(1190, 455, 60, 30);
+	}
 }

@@ -165,4 +165,7 @@ public:
 	CServiceSocket* m_pTurn;
 	int m_nSubmitTileNum;
 	bool m_bFirstSubmit; // 첫 번째 제출 여부
+	void InitControls();
 };
+
+
