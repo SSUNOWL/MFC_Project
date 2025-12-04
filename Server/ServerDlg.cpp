@@ -1364,6 +1364,10 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
+		// ========================================================
+		// [규칙 수정] 이동 제한 및 교환 로직 강화 (양방향 체크)
+		// ========================================================
+
 		// [규칙 1] 내 턴이 아닐 때 제출 금지
 		if (!m_bCurrentTurn && bClickedPublic)
 		{
@@ -1371,16 +1375,59 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
-		// [규칙 2] 공용판 -> 개인판 이동 시 '기존 타일'인지 검사
+		// 검사 대상 타일 찾기
+		// (공용판에서 개인판으로 넘어오게 될 타일이 무엇인지 식별)
+		Tile* pMovingToPrivate = nullptr;
+		bool bIsSwapAttempt = false;
+
+		// CASE A: 공용판 타일을 선택해서 -> 개인판을 클릭한 경우 (직접 회수 시도)
 		if (m_bSelectedFromPublic && bClickedPrivate)
 		{
-			Tile& selectedTile = m_public_tile[m_nSelectedRow][m_nSelectedCol];
-			if (IsExistingPublicTile(selectedTile.tileId))
+			pMovingToPrivate = &m_public_tile[m_nSelectedRow][m_nSelectedCol];
+
+			// 대상(개인판)이 비어있지 않으면 교환(Swap) 시도임
+			Tile& target = m_private_tile[nRow][nCol];
+			if (!(target.color == BLACK && target.num == 0 && !target.isJoker)) bIsSwapAttempt = true;
+		}
+		// CASE B: 개인판 타일을 선택해서 -> 공용판 타일을 클릭한 경우 (교환 회수 시도 - 버그 발생 구간)
+		else if (!m_bSelectedFromPublic && bClickedPublic)
+		{
+			// 클릭된 공용판 위치에 타일이 있다면, 그 타일이 개인판으로 오게 됨
+			Tile& target = m_public_tile[nRow][nCol];
+
+			// 빈 칸이 아니면 교환 시도
+			if (!(target.color == BLACK && target.num == 0 && !target.isJoker))
 			{
-				AfxMessageBox(_T("기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
-				m_bIsSelected = false; Invalidate(TRUE); return;
+				pMovingToPrivate = &target;
+				bIsSwapAttempt = true;
 			}
 		}
+
+		// [규칙 2] 공용판 -> 개인판으로 이동하려는 타일이 '기존 타일'인지 검사
+		if (pMovingToPrivate != nullptr)
+		{
+			if (IsExistingPublicTile(pMovingToPrivate->tileId))
+			{
+				// 2-1. 조커인 경우
+				if (pMovingToPrivate->isJoker)
+				{
+					// 조커는 반드시 '교환(Swap)' 방식으로만 가져올 수 있음
+					if (!bIsSwapAttempt)
+					{
+						AfxMessageBox(_T("공용판의 조커는 타일과 '교환'하는 방식으로만 가져올 수 있습니다."));
+						m_bIsSelected = false; Invalidate(TRUE); return;
+					}
+					// 교환 시도라면 허용
+				}
+				// 2-2. 일반 타일인 경우 (절대 회수 불가)
+				else
+				{
+					AfxMessageBox(_T("기존에 등록된 타일은 다시 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
+					m_bIsSelected = false; Invalidate(TRUE); return;
+				}
+			}
+		}
+		// ========================================================
 
 		// --- 데이터 교환 (Swap) ---
 		Tile* pSourceTile = m_bSelectedFromPublic
