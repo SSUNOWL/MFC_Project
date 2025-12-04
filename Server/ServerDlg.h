@@ -16,7 +16,8 @@ class CServerDlg : public CDialogEx
 public:
 	CServerDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
 	virtual ~CServerDlg();
-
+	const int DESIGN_WIDTH = 1920;
+	const int DESIGN_HEIGHT = 1080;
 	// 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_SERVER_DIALOG };
@@ -190,6 +191,13 @@ public:
 	int m_nSubmitTileNum;
 	bool m_bFirstSubmit; // 첫 번째 제출 여부
 	void InitControls();
+	double GetDPIScale();
+	CPoint GetScaledPoint(CPoint designPt);
+	CPoint ScreenToDesign(CPoint screenPt);
+	double GetScaleX();
+	double GetScaleY();
+	int GetScaledSize(int designSize);
+
 };
 
 
