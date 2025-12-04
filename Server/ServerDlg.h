@@ -6,7 +6,7 @@
 #include "ServiceSocket.h"
 #include <array>
 #include <list>
-
+#include <map>
 #include <algorithm>
 
 // CServerDlg 대화 상자
