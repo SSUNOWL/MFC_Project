@@ -182,6 +182,7 @@ BOOL CServerDlg::OnInitDialog()
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
 	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
 	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	InitControls();
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -332,6 +333,15 @@ void CServerDlg::OnBnClickedButtonSend()
 
 void CServerDlg::OnBnClickedButtonStart()
 {
+	if (m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 게임이 이미 진행 중입니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+		return;
+	}
+
 	CAdressDlg pAddressDlg;
 	
 	INT_PTR nResponse = pAddressDlg.DoModal();
@@ -689,6 +699,14 @@ void CServerDlg::Receive() {
 }
 
 void CServerDlg::OnBnClickedButtonReceive() {
+	if (!m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 게임이 시작되지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+		return;
+	}
 	
 	if (m_bCurrentTurn == true && m_intPrivateTileNum!=51) {
 			CString strMsg;
@@ -725,7 +743,11 @@ bool CServerDlg::IsPublicTileValid()
 	// 첫 번째 제출 시, 총합이 30 미만인지 검사
 	if (m_bFirstSubmit && (sum < 30))
 	{
-		AfxMessageBox(_T("첫 번째 제출 시, 타일의 총합이 30 이상이어야 합니다."));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 첫 번째 제출 시, 타일의 총합이 30 이상이어야 합니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 
 		return false;
 	}
@@ -762,7 +784,11 @@ bool CServerDlg::IsRowValid(int row, int *sum)
 			// 첫 번째 제출 시, 기존 타일과 새 타일이 섞여있는지 검사
 			if (m_bFirstSubmit && IsChunkMixed(tileChunk, &isAllNew))
 			{
-				AfxMessageBox(_T("첫 번째 제출 시, 기존 타일과 새 타일이 섞여 있을 수 없습니다."));
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 첫 번째 제출 시, 기존 타일과 새 타일이 섞여 있을 수 없습니다."));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+				Invalidate(TRUE);
 
 				return false;
 			}
@@ -1045,14 +1071,31 @@ void CServerDlg::OnBnClickedButtonPass()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 
+	if (!m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 게임이 시작되지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE); 
+		return;
+	}
+
 	if (!m_bCurrentTurn) {
-		AfxMessageBox(_T("턴이 돌아오지 않았습니다.", MB_OK));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 턴이 돌아오지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 
 		return;
 	}
 
 	if (m_nSubmitTileNum == 0) {
-		AfxMessageBox(_T("제출한 타일이 없습니다.", MB_OK));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 제출한 타일이 없습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 		
 		return;
 	}
@@ -1070,7 +1113,11 @@ void CServerDlg::OnBnClickedButtonPass()
 	}
 	else // 공용판이 올바르지 않은 경우
 	{
-		AfxMessageBox(_T("공용판이 올바르지 않습니다.", MB_OK));
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 공용판이 올바르지 않습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 	}
 	Invalidate(TRUE);
 }
@@ -1080,7 +1127,11 @@ void CServerDlg::OnBnClickedButtonPass()
 void CServerDlg::OnBnClickedButtonPlay()
 {
 	if (m_clientSocketList.GetCount() < 1) {
-		AfxMessageBox(_T("다른 플레이어를 기다려야합니다."), MB_OK | MB_ICONWARNING);
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 다른 플레이어를 기다려야합니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
 	}
 	else {
 		if (!m_bisGameStarted) {
@@ -1091,9 +1142,20 @@ void CServerDlg::OnBnClickedButtonPlay()
 			requestMsg.Format(_T("type:GameStarted"));
 			BroadcastMessage(requestMsg, 0);
 
-			Invalidate(TRUE);
+			CString strTmpLog;
+			strTmpLog.Format(_T("[INFO] 게임이 시작되었습니다."));
+			m_list_message.AddString(strTmpLog);
+			m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
 
-			AfxMessageBox(_T("게임이 시작되었습니다.", MB_OK));
+			Invalidate(TRUE);
+		}
+		else {
+			CString strTmpLog;
+			strTmpLog.Format(_T("[INFO] 게임이 이미 진행 중입니다."));
+			m_list_message.AddString(strTmpLog);
+			m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+
+			Invalidate(TRUE);
 		}
 	}
 }
@@ -1372,7 +1434,11 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		// [규칙 1] 내 턴이 아닐 때 제출 금지
 		if (!m_bCurrentTurn && bClickedPublic)
 		{
-			AfxMessageBox(_T("내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
+			CString strTmpLog;
+			strTmpLog.Format(_T("[INFO] 내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
+			m_list_message.AddString(strTmpLog);
+			m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
@@ -1382,7 +1448,11 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			Tile& selectedTile = m_public_tile[m_nSelectedRow][m_nSelectedCol];
 			if (IsExistingPublicTile(selectedTile.tileId))
 			{
-				AfxMessageBox(_T("기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+
 				m_bIsSelected = false; Invalidate(TRUE); return;
 			}
 		}
@@ -1565,12 +1635,30 @@ void CServerDlg::Backup() { // 매 턴 시작시마다 백업 예정
 void CServerDlg::OnClickedButtonSetback()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	if (!m_bisGameStarted) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 게임이 시작되지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+		return;
+	}
+
 	if (m_bCurrentTurn) {
 		CString strMsg;
 		strMsg.Format(_T("type:Setback|sender:시스템"));
 		Setback();
 		BroadcastMessage(strMsg, 0); // 전체 공용판 setback
 		Invalidate(TRUE);
+	}
+	else {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 턴이 돌아오지 않았습니다."));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		Invalidate(TRUE);
+
+		return;
 	}
 }
 void CServerDlg::Setback() {
@@ -1865,4 +1953,57 @@ void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
 
         *pResult = CDRF_NEWFONT; // 폰트/색상 변경 적용
     }
+}
+
+void CServerDlg::InitControls() {
+	/// [PLAY / 제출] 버튼
+		if (GetDlgItem(IDC_BUTTON_PLAY)) {
+			GetDlgItem(IDC_BUTTON_PLAY)->MoveWindow(720, 555, 80, 40);
+		}
+	// [PASS / 턴넘김] 버튼
+	if (GetDlgItem(IDC_BUTTON_PASS)) {
+		GetDlgItem(IDC_BUTTON_PASS)->MoveWindow(810, 555, 80, 40);
+	}
+	// [RECEIVE / 타일받기] 버튼
+	if (GetDlgItem(IDC_BUTTON_RECEIVE)) {
+		GetDlgItem(IDC_BUTTON_RECEIVE)->MoveWindow(720, 605, 80, 40);
+	}
+	// [SETBACK / 되돌리기] 버튼
+	if (GetDlgItem(IDC_BUTTON_SetBack)) {
+		GetDlgItem(IDC_BUTTON_SetBack)->MoveWindow(810, 605, 80, 40);
+	}
+
+	// [플레이어 목록] (버튼들 옆에 배치)
+	if (GetDlgItem(IDC_LIST_PLAYER)) {
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(900, 555, 150, 90);
+	}
+
+
+	// -------------------------------------------------------------
+	// 3. [오른쪽 상단] 공용판(width=980) 옆 빈 공간 (x > 1000)
+	// -------------------------------------------------------------
+
+	// [시작] 버튼 (가장 잘 보이게 위쪽)
+	if (GetDlgItem(IDC_BUTTON_START)) {
+		GetDlgItem(IDC_BUTTON_START)->MoveWindow(1000, 35, 250, 40);
+	}
+
+	// [채팅/메시지 목록]
+	if (GetDlgItem(IDC_LIST_MESSAGE)) {
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(1000, 85, 250, 200);
+	}
+
+	// [시스템 로그 목록]
+	if (GetDlgItem(IDC_LIST_LOG)) {
+		GetDlgItem(IDC_LIST_LOG)->MoveWindow(1000, 295, 250, 150);
+	}
+
+	// [채팅 입력창]
+	if (GetDlgItem(IDC_EDIT_SEND)) {
+		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(1000, 455, 180, 30);
+	}
+	// [보내기 버튼]
+	if (GetDlgItem(IDC_BUTTON_SEND)) {
+		GetDlgItem(IDC_BUTTON_SEND)->MoveWindow(1190, 455, 60, 30);
+	}
 }
