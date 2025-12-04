@@ -1152,8 +1152,6 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		// ========================================================
 		if (!m_bCurrentTurn && bClickedPublic)
 		{
-			// (옵션) 너무 자주 뜨면 귀찮을 수 있으니 메시지 박스는 생략하거나 필요시 주석 해제
-			// AfxMessageBox(_T("내 턴이 아닐 때는 공용판을 건드릴 수 없습니다."));
 			return;
 		}
 
@@ -1193,12 +1191,12 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		// 1. 내 턴이 아닐 때: 제출 및 조작 불가
 		if (!m_bCurrentTurn && bClickedPublic)
 		{
+			// 공용판 조작(제출/이동) 불가 메시지
 			AfxMessageBox(_T("내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
-		// 검사 대상 타일 찾기
-		// (공용판에서 개인판으로 넘어오게 될 타일이 무엇인지 식별)
+		// 검사 대상 타일 찾기 (공용판에서 개인판으로 넘어오게 될 타일 식별)
 		Tile* pMovingToPrivate = nullptr;
 		bool bIsSwapAttempt = false;
 
@@ -1211,7 +1209,7 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			Tile& target = m_private_tile[nRow][nCol];
 			if (!(target.color == BLACK && target.num == 0 && !target.isJoker)) bIsSwapAttempt = true;
 		}
-		// CASE B: 개인판 타일을 선택해서 -> 공용판 타일을 클릭한 경우 (교환 회수 시도 - 버그 발생 구간)
+		// CASE B: 개인판 타일을 선택해서 -> 공용판 타일을 클릭한 경우 (교환 회수 시도)
 		else if (!m_bSelectedFromPublic && bClickedPublic)
 		{
 			// 클릭된 공용판 위치에 타일이 있다면, 그 타일이 개인판으로 오게 됨
@@ -1234,13 +1232,12 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				if (pMovingToPrivate->isJoker)
 				{
 					// 조커는 반드시 '교환(Swap)' 방식으로만 가져올 수 있음
-					// (빈 칸으로 그냥 가져오는 것은 불가능)
 					if (!bIsSwapAttempt)
 					{
 						AfxMessageBox(_T("공용판의 조커는 타일과 '교환'하는 방식으로만 가져올 수 있습니다."));
 						m_bIsSelected = false; Invalidate(TRUE); return;
 					}
-					// 교환 시도라면 허용 (단, 루미큐브 규칙상 맞는 패인지 검증해야 하지만 여기선 Swap만 허용)
+					// 교환 시도라면 허용
 				}
 				// 2-2. 일반 타일인 경우 (절대 회수 불가)
 				else
@@ -1494,20 +1491,49 @@ void CClientDlg::UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum)
 }
 
 // 개인 타일수 업데이트 이후 타일수 업데이트 해주세요~ 요청
-void CClientDlg::UpdateSelfTileNum() {
-	//--타일수 업데이트;
+void CClientDlg::UpdateSelfTileNum()
+{
+	// -- 남은 타일 수 / 숫자 합 / 조커 개수 계산
 	int nCount = 0;
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 18; j++)
-			if (m_private_tile[i][j].tileId != -1) nCount++;
+	int sumNumbers = 0;
+	int jokerCount = 0;
+
+	for (int row = 0; row < 4; ++row)
+	{
+		for (int col = 0; col < 18; ++col)
+		{
+			const Tile& t = m_private_tile[row][col];
+
+			if (t.tileId == -1)
+				continue; // 빈 칸
+
+			++nCount;
+
+			if (t.isJoker)
+			{
+				++jokerCount;
+			}
+			else
+			{
+				sumNumbers += t.num;
+			}
+		}
+	}
 
 	m_intPrivateTileNum = nCount;
 
+	// 서버에 타일 수 + 합 + 조커 개수 전송
 	CString requestMsg;
-	requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
+	requestMsg.Format(
+		_T("type:UpdateTileNum|sender:%s|tilenum:%d|sum:%d|joker:%d"),
+		m_strName,
+		m_intPrivateTileNum,
+		sumNumbers,
+		jokerCount
+	);
 	RequestMessage(requestMsg);
-
 }
+
 
 
 // player list 그리기

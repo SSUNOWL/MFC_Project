@@ -1,0 +1,151 @@
+[33m76325a0[m[33m ([m[1;36mHEAD[m[33m, [m[1;31morigin/develop[m[33m, [m[1;31morigin/HEAD[m[33m)[m error modal to error log
+[33mbbc7cae[m[33m ([m[1;31morigin/errormsg[m[33m)[m error or lerror log edited
+[33m8b6f884[m[33m ([m[1;31morigin/dev251204[m[33m, [m[1;31morigin/dev1204[m[33m, [m[1;32mdev251204[m[33m, [m[1;32mdev1204[m[33m)[m display fix
+[33md17c01a[m display fix
+[33mea70d00[m submodule delete
+[33m79ca202[m display
+[33m6b601a9[m 타일이 꽉 차면 receive 불가
+[33m45dfa92[m[33m ([m[1;31morigin/backup1203[m[33m)[m Merge pull request #24 from SSUNOWL/pass
+[33m031cf2b[m[33m ([m[1;31morigin/pass[m[33m)[m first submit check added in pass
+[33m930cc98[m tile num check added in pass
+[33m9becfd1[m update: player>4
+[33me99226b[m update:reject if player>4
+[33mbc84955[m update:player color
+[33mfb7121f[m update: updateTilenum
+[33m55f10d8[m merge
+[33m5390cd8[m merge
+[33mb782c69[m update: player list
+[33m9237c66[m[33m ([m[1;31morigin/Setback[m[33m)[m Setback, Receive 버그 수정 완
+[33m61d7dca[m setback, receive 버그 수정
+[33m44037d9[m receive에 setback 구현
+[33m69545bb[m setback 기능 구현
+[33m182623c[m .
+[33md6adae9[m .
+[33m5f454a9[m .
+[33mf1ca5b0[m setback 수정 1차
+[33m1574ea0[m update:player lsit
+[33m17c5ca8[m update:merging trycatch
+[33m8561b3b[m update: merging trycatch
+[33m105c05d[m update: playerlist
+[33m880dd0a[m develop 병합2
+[33m43f1b64[m setback 병합
+[33m8dcaf27[m Merge pull request #23 from SSUNOWL/playermanage
+[33m5d7acd3[m[33m ([m[1;31morigin/playermanage[m[33m)[m merge develop to playermanage
+[33m0957159[m Merge pull request #22 from SSUNOWL/dev251127
+[33mc371a04[m[33m ([m[1;31morigin/dev251127[m[33m, [m[1;32mdev251127[m[33m)[m tile move & bug fix // by khh
+[33md0e551c[m server/client 탈주 기능 추가
+[33mfd16e4b[m update: No deck
+[33m6b77fe1[m 4cbf64f
+[33m4d877c2[m Merge branch 'dev' into develop
+[33m5405663[m Update Server.rc
+[33m4cbf64f[m Merge branch 'develop' of https://github.com/SSUNOWL/MFC_Project into develop
+[33m4676f8d[m windwo size
+[33md79d522[m 창 크기 고정
+[33m657af33[m 창 크기 고정
+[33m1692dfc[m tile move added
+[33m2f33a09[m Client에 Invalidate까지 적용
+[33m99d954c[m Setback 초안 완성 (테스트 필요)
+[33m99d489d[m setback 구현
+[33m09f310d[m Setback 구현
+[33m3b2510b[m setback 서버 구현
+[33mc875777[m Backup server/client 모두 구현
+[33m44cdb98[m server backup 구현
+[33m24bc525[m Merge pull request #21 from SSUNOWL/backup
+[33md328512[m[33m ([m[1;31morigin/backup[m[33m)[m Backup
+[33m5e82d94[m 주석 지우기
+[33m7f4ca39[m update: client visualize
+[33m79ef22b[m Merge pull request #19 from SSUNOWL/resourse
+[33m6467af8[m[33m ([m[1;31morigin/resourse[m[33m)[m fine-tuning2
+[33me88702c[m Merge pull request #18 from SSUNOWL/resourse
+[33m3cfe254[m fine-tuning
+[33m70c79a1[m Merge pull request #17 from SSUNOWL/resourse
+[33mbc1fa75[m invalidate & client paint
+[33m6d6899a[m Merge branch 'develop' of https://github.com/SSUNOWL/MFC_Project into resourse
+[33m5cb68ef[m update: message submit & process
+[33m76ddb19[m erge branch 'messagehandler' into develop merging received
+[33m1a741b8[m Merge branch 'develop' of https://github.com/SSUNOWL/MFC_Project into develop
+[33m5110e65[m update: server&client onreceive
+[33m32a142f[m Merge branch 'develop' of https://github.com/SSUNOWL/MFC_Project into resourse
+[33m9fe6d96[m client resouce
+[33m9a7e37f[m Merge pull request #16 from SSUNOWL/pass
+[33mb370ab4[m Merge branch 'develop' into pass
+[33m043bc61[m public/private tiel drawing function completed
+[33m0dc45ae[m merge
+[33m00fe17a[m server.rc
+[33m6ffebea[m Merge pull request #15 from SSUNOWL/pass
+[33m2cdeb81[m pass completed(sleep)
+[33m681d491[m merge develop to pass
+[33mb00658c[m merge
+[33m6d315ce[m pass completed(sleep)
+[33m8821c08[m Merge pull request #14 from SSUNOWL/resourse
+[33m928f981[m resource
+[33ma797916[m pic resource
+[33mb4fa959[m merging
+[33m043bf9a[m update: 더 넓은 로그창 for logging
+[33m2390ffd[m Merge pull request #13 from SSUNOWL/paint
+[33m708975c[m[33m ([m[1;31morigin/paint[m[33m)[m paint tiles
+[33m0763fc5[m paint tiles 2
+[33m426e7c8[m paint tiles
+[33m13cd096[m merge develop to pass
+[33m0efd515[m paint tiles
+[33m799d468[m[33m ([m[1;31morigin/receive[m[33m)[m receive 오류 수정
+[33m47f373d[m receive 구현 (server, client 모두)
+[33m564b156[m receive 수정
+[33m9bbd545[m receive 2
+[33meb92aff[m 패 한장 받기 구현 - server
+[33m7364ce7[m Merge branch 'develop' into receive
+[33md33e54d[m update: pass function with multiple, welcome comment
+[33mfa49aef[m update: pass function with multiple, welcome comment
+[33md6d2036[m update: nextTurn func
+[33m631da73[m update: variables
+[33mf283a42[m Merge branch 'develop' into receive
+[33m2e13429[m update: start btn function
+[33me6d07ca[m update: playgame btn, function
+[33mf939285[m Update ServerDlg.cpp
+[33m2571e03[m Merge branch 'develop' into receive
+[33m4c37b54[m 버튼 추가
+[33m68660b8[m Update ServerDlg.cpp
+[33m99b6adc[m IsPublicTileValid() test and debugging complete
+[33m51bd809[m merge develop to pass
+[33m3b58602[m merge develop to pass
+[33m2be03ac[m .
+[33m183cbfa[m Update ClientDlg.cpp
+[33m5842bd5[m Merge branch 'develop' of https://github.com/SSUNOWL/MFC_Project into develop
+[33m8bcf297[m 서버 pass 기능 구현, 턴 넘기는 기능은 구현하지 않음
+[33m19e6398[m receive 2
+[33mdc3a58e[m Merge pull request #10 from SSUNOWL/randomtiles
+[33m3d24a85[m receive 추가 1
+[33m6a7118e[m update random tile check
+[33m501804f[m Merge pull request #9 from SSUNOWL/randomtiles
+[33m0c560ba[m update#2 random tile
+[33mec80052[m Merge pull request #8 from SSUNOWL/randomtiles
+[33mcf960fc[m update: random tile list
+[33m1053972[m Merge branch 'develop' of https://github.com/SSUNOWL/MFC_Project into develop
+[33mad783cb[m 준혁 커밋
+[33m7c6d511[m client 기본 변수 , 함수 설정
+[33mc4bc88d[m Update#2: 유저이름, res, req message function
+[33m7df7f03[m Merge pull request #7 from SSUNOWL/socketfunction
+[33mb16b20f[m Update: 유저이름, res, req message function
+[33mbb244e9[m add array header
+[33m4c015a0[m 전체 패 초기화 및 셔플 정의 (구현은 안함)
+[33m11d0e3e[m Merge pull request #6 from SSUNOWL/main
+[33m80118a3[m[33m ([m[1;31morigin/main[m[33m)[m Merge pull request #5 from SSUNOWL/develop
+[33mc6df432[m addressdlg
+[33m37579b3[m Merge pull request #4 from SSUNOWL/ip
+[33m17d3c58[m user-serverip
+[33m2639be9[m Merge pull request #3 from SSUNOWL/ip
+[33m8848a9e[m ip addressc connect
+[33m9690f35[m Update Server.rc
+[33mda5609d[m Update resource.h
+[33mbf045cb[m Merge branch 'UI' into develop
+[33m91a1177[m Update Server.rc
+[33m8ad3769[m Merge pull request #2 from SSUNOWL/UI
+[33mc033fb7[m server,clinet ui
+[33m757083f[m Merge pull request #1 from SSUNOWL/UI
+[33m8246d84[m ui
+[33ma157fa8[m test
+[33m0216761[m client dialog
+[33m0c4a087[m Initial commit
+[33m38de449[m Merge branch 'main' of https://github.com/SSUNOWL/MFC_Project
+[33m1d310b9[m Init commit
+[33mb07ec03[m Initial commit

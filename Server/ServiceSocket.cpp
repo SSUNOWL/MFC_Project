@@ -138,10 +138,30 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
     // 1. 서버 로그에 메시지 수신 사실 기록
     if (m_pServerDlg)
     {
-        m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
         CString strType, strSender;
-        if (messageMap.Lookup(_T("type"), strType)){}
-        if (messageMap.Lookup(_T("sender"), strSender)){}
+        if (messageMap.Lookup(_T("type"), strType)) {}
+        if (messageMap.Lookup(_T("sender"), strSender)) {}
+        //[251204] log에 joker/sum 타일갯수 정보 안띄우게 수정
+        if (strType == _T("UpdateTileNum"))
+        {
+            // sum / joker 는 로그에 안 남기고, 타일 수만 찍기
+            CString strTilenum;
+            messageMap.Lookup(_T("tilenum"), strTilenum);
+
+            CString strLog;
+            strLog.Format(
+                _T("RECV: type:UpdateTileNum | sender:%s | tilenum:%s"),
+                strSender.GetString(),
+                strTilenum.GetString()
+            );
+            m_pServerDlg->AddLog(strLog);
+        }
+        else
+        {
+            // 나머지 타입은 기존처럼 전체 로그
+            m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
+        }
+
         if (strType == _T("CHAT")) {
             CString strSend;
             if (messageMap.Lookup(_T("content"), strSend));
@@ -288,22 +308,29 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pServerDlg->BroadcastMessage(strMsg, 0);
             m_pServerDlg->Setback();
         }
-        else if (strType == _T("UpdateTileNum")) {
-            int nTilenum;
-            CString strTilenum;
-            if (messageMap.Lookup(_T("tilenum"), strTilenum));
-            nTilenum = _ttoi(strTilenum);
+        else if (strType == _T("UpdateTileNum"))
+        {
+            CString strTilenum, strSum, strJoker;
+            messageMap.Lookup(_T("tilenum"), strTilenum);
+            messageMap.Lookup(_T("sum"), strSum);   // 새로 추가
+            messageMap.Lookup(_T("joker"), strJoker); // 새로 추가
+
+            int nTilenum = _ttoi(strTilenum);
+            int nSum = _ttoi(strSum);
+            int nJoker = _ttoi(strJoker);
+
             m_pServerDlg->UpdatePlayerTileCount(this, nTilenum);
+            m_pServerDlg->SetPlayerScoreStat(this, nSum, nJoker);
 
+            //클라이언트들에게는 sum/joker 없이 타일 개수만 브로드캐스트
             CString strMsg;
+            strMsg.Format(
+                _T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
+                m_strName, nTilenum, (unsigned long long)this
+            );
 
-            strMsg.Format(_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
-                m_strName, nTilenum, (unsigned long long)this);
-
-            // ** 클라이언트는 자신의 소켓 주소를 모름 -> 모두에게 다시 보내주기
             m_pServerDlg->BroadcastMessage(strMsg, 0);
+}
 
-
-        }
     }
 }
