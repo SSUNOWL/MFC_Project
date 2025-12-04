@@ -130,4 +130,6 @@ public:
 	bool IsChunkMixed(const std::list<Tile>& tileChunk, bool* isAllNew);
 	int CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun);
 	bool m_bFirstSubmit; // 첫 번째 제출 여부
+	void InitControls();
+
 };
