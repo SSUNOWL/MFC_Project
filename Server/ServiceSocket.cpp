@@ -259,14 +259,23 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
                 m_pServerDlg->BroadcastMessage(requestMsg, pSender);
                 
-                AfxMessageBox(_T("플레이어 탈주로 게임을 종료합니다.", MB_OK));
+                for (int i = 0; i < 3; i++) {
+                    CString strTmpLog;  
+                    strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
+                    m_pServerDlg->m_list_message.AddString(strTmpLog);
+                    m_pServerDlg->m_list_message.SetTopIndex(m_pServerDlg->m_list_message.GetCount() - 1);
+                    //m_pServerDlg->Invalidate(TRUE);
+                    m_pServerDlg->UpdateWindow();
+
+                    Sleep(1000);
+                }
 
                 // 다이얼로그 닫기
                 m_pServerDlg->PostMessage(WM_CLOSE);
-                //if (m_pServerDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
-                //{
-                //    m_pServerDlg->PostMessage(WM_CLOSE);
-                //}
+                if (m_pServerDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+                {
+                    m_pServerDlg->PostMessage(WM_CLOSE);
+                }
             }
         }
         else if (strType == _T("Backup")) {
