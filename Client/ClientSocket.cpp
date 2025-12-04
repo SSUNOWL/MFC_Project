@@ -284,6 +284,15 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                     m_pClientDlg->PostMessage(WM_CLOSE);
                 }
             }
+            else if (isNormalEnd == 1) { //정상적으로 게임이 끝난 경우 (점수 결과 있음)
+                m_pClientDlg->m_bisGameStarted = FALSE;
+                m_pClientDlg->m_bCurrentTurn = false;
+
+                CString result;
+                if (messageMap.Lookup(_T("result"), result)) {
+                    AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
+                }
+            }
         }
         else if (strType == _T("GameStarted")) {
 			m_pClientDlg->m_bisGameStarted = TRUE;

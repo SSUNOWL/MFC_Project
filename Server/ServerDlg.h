@@ -76,6 +76,24 @@ public:
 		int tileId = -1; // 나머지 1~106, 비어있는 판으로 표시하기 위해 -1로 초기화
 
 	};
+	// [GAMEOVER] 점수 계산용 구조체
+	struct PlayerResult
+	{
+		CString         name;
+		CServiceSocket* pSocket;
+		int             tileCount;    // 남은 타일 개수
+		int             sumNumbers;   // 남은 타일 숫자 합
+		int             jokerCount;   // 남은 조커 개수
+		int             finalScore;   // 최종 점수 (+면 이김, -면 패)
+		bool            isWinner;
+	};
+	struct PlayerScoreStat
+	{
+		int sumNumbers = 0;
+		int jokerCount = 0;
+	};
+	std::map<CServiceSocket*, PlayerScoreStat> m_playerScore;
+
 	// === [게임 상태: 서버 권위] ===
    // 전체 106장(색 4 × 1~13 × 2세트 = 104 + 조커 2)
 	std::array<Tile, 106> m_tile_list;      // 원본 덱
@@ -141,6 +159,12 @@ public:
 	// [251127] 규칙 검사 및 백업 함수
 	bool IsExistingPublicTile(int tileId);
 	void CopyBoards(); // 턴 시작 시 현재 상태 백업
+
+	// [251204] 게임 종료 기능 변수 및 함수
+	bool m_bGameOver; //게임 종료 여부
+	void HandleGameOver(CServiceSocket* pWinnerSocket);
+	void GetPlayerTileStat(CServiceSocket* pSocket, int& outSum, int& outJoker);
+	void SetPlayerScoreStat(CServiceSocket* pSocket, int sum, int joker);
 
 private:
 	bool IsRowValid(int row, int* sum);

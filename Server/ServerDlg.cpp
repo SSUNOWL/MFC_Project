@@ -16,6 +16,8 @@
 #include <atlimage.h>
 #include <comdef.h>
 #include <list>
+#include <vector>
+#include <map>
 
 
 #ifdef _DEBUG
@@ -70,6 +72,8 @@ CServerDlg::CServerDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_strName = _T("");
 	//  m_intTurnPos = 0;
+
+	m_bGameOver = FALSE;
 }
 CServerDlg::~CServerDlg()
 {
@@ -556,7 +560,8 @@ void CServerDlg::ShuffleTiles() {
 void CServerDlg::PlayGame() { 
 	// 유저 정보 요청해서 다 받음.
 	//게임 시작할때 필요되는 초기화 과정 전부 여기서 진행
-	
+	m_bGameOver = FALSE;
+
 	ShuffleTiles();
 	//서버의 턴 시작
 	m_posTurn = NULL;
@@ -1600,7 +1605,14 @@ void CServerDlg::UpdatePlayerTileCount(CServiceSocket* pSocket, int nTileNum)
 
 			// 1번 컬럼(타일 수) 업데이트
 			m_listPlayer.SetItemText(i, 1, strNum);
+
+			if (m_bisGameStarted && !m_bGameOver && nTileNum == 0)
+			{
+				HandleGameOver(pSocket);  // pSocket == nullptr 이면 서버가 승자
+			}
+
 			return; // 찾았으므로 종료
+
 		}
 	}
 }
@@ -1626,20 +1638,198 @@ void CServerDlg::AddPlayerToList(CString strName, int nTileCount, CServiceSocket
 	
 
 void CServerDlg::UpdateSelfTileNum() {
-	//--타일수 업데이트;
 	int nCount = 0;
+	int sum = 0;
+	int joker = 0;
+
 	for (int i = 0; i < 4; i++)
+	{
 		for (int j = 0; j < 18; j++)
-			if (m_private_tile[i][j].tileId != -1) nCount++;
+		{
+			const Tile& t = m_private_tile[i][j];
+			if (t.tileId == -1) continue;
+
+			nCount++;
+			if (t.isJoker) joker++;
+			else           sum += t.num;
+		}
+	}
 
 	m_intPrivateTileNum = nCount;
-	//---전송로직
+
+	SetPlayerScoreStat(nullptr, sum, joker);
+
 	CString strUpdateTilenum;
-	strUpdateTilenum.Format(_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
-		m_strName, m_intPrivateTileNum, 0);
-	// 나를 제외한 모두에게 전송
+	strUpdateTilenum.Format(
+		_T("type:UpdateTileNum|sender:시스템|name:%s|tilenum:%d|id:%llu"),
+		m_strName, m_intPrivateTileNum, 0
+	);
+
 	BroadcastMessage(strUpdateTilenum, 0);
-	UpdatePlayerTileCount(0, m_intPrivateTileNum);
+	UpdatePlayerTileCount(nullptr, m_intPrivateTileNum);  // pSocket == 0
+}
+
+
+// [GAMEOVER] 클라이언트 쪽에서 보내준 점수 정보 저장
+void CServerDlg::SetPlayerScoreStat(CServiceSocket* pSocket, int sum, int joker)
+{
+	if (!pSocket) return; // 서버 본인은 여기서 안 다룸 (서버는 자신의 보드를 직접 스캔)
+
+	PlayerScoreStat& stat = m_playerScore[pSocket];
+	stat.sumNumbers = sum;
+	stat.jokerCount = joker;
+}
+
+// [GAMEOVER] 플레이어별 남은 숫자 합 / 조커 개수 얻기
+void CServerDlg::GetPlayerTileStat(CServiceSocket* pSocket, int& outSum, int& outJoker)
+{
+	outSum = 0;
+	outJoker = 0;
+
+	// 서버(자기 자신)인 경우: m_private_tile 그대로 스캔
+	if (pSocket == nullptr)
+	{
+		for (int row = 1; row <= 3; ++row)
+		{
+			for (int col = 1; col <= 17; ++col)
+			{
+				const Tile& t = m_private_tile[row][col];
+
+				// 빈 칸이면 스킵
+				if (t.color == BLACK && t.num == 0 && !t.isJoker)
+					continue;
+
+				if (t.isJoker)
+					++outJoker;
+				else
+					outSum += t.num;
+			}
+		}
+	}
+	else
+	{
+		// 클라이언트는 m_playerScore에서 가져옴
+		auto it = m_playerScore.find(pSocket);
+		if (it != m_playerScore.end())
+		{
+			outSum = it->second.sumNumbers;
+			outJoker = it->second.jokerCount;
+		}
+		// 못 찾으면 0, 0
+	}
+}
+void CServerDlg::HandleGameOver(CServiceSocket* pWinnerSocket)
+{
+	if (m_bGameOver) return; // 중복 호출 방지
+
+	m_bGameOver = TRUE;
+	m_bisGameStarted = FALSE; // 정상 종료
+
+	using std::vector;
+
+	vector<PlayerResult> players;
+	int nItems = m_listPlayer.GetItemCount();
+	int winnerIndex = -1;
+
+	// 1) ListCtrl에서 플레이어 정보 수집
+	for (int i = 0; i < nItems; ++i)
+	{
+		PlayerResult pr{};
+		pr.name = m_listPlayer.GetItemText(i, 0);
+		CString strCnt = m_listPlayer.GetItemText(i, 1);
+		pr.tileCount = _ttoi(strCnt);
+		pr.pSocket = (CServiceSocket*)m_listPlayer.GetItemData(i);
+		pr.isWinner = (pr.pSocket == pWinnerSocket);
+
+		// 숫자 합/조커 개수 채우기
+		GetPlayerTileStat(pr.pSocket, pr.sumNumbers, pr.jokerCount);
+		pr.finalScore = 0;
+
+		if (pr.isWinner) winnerIndex = i;
+
+		players.push_back(pr);
+	}
+
+	// 혹시 못 찾았으면 tileCount==0인 사람을 승자로 간주
+	if (winnerIndex == -1)
+	{
+		for (int i = 0; i < (int)players.size(); ++i)
+		{
+			if (players[i].tileCount == 0)
+			{
+				players[i].isWinner = true;
+				winnerIndex = i;
+				break;
+			}
+		}
+	}
+
+	if (winnerIndex == -1)
+	{
+		AfxMessageBox(_T("게임 종료는 감지했지만 승자를 찾지 못했습니다."),
+			MB_OK | MB_ICONEXCLAMATION);
+		return;
+	}
+
+	// 2) 패자 점수(마이너스) 및 벌점 합산
+	int totalLoserPenalty = 0;
+	for (int i = 0; i < (int)players.size(); ++i)
+	{
+		if (i == winnerIndex) continue;
+
+		int penalty = players[i].sumNumbers + players[i].jokerCount * 30;
+		players[i].finalScore = -penalty;
+		totalLoserPenalty += penalty;
+	}
+
+	// 3) 승자 점수(플러스) = 모든 패자의 벌점 총합
+	players[winnerIndex].finalScore = totalLoserPenalty;
+
+	// 4) 점수 순으로 정렬
+	vector<PlayerResult> sorted = players;
+	std::sort(sorted.begin(), sorted.end(),
+		[](const PlayerResult& a, const PlayerResult& b)
+		{
+			if (a.finalScore != b.finalScore)
+				return a.finalScore > b.finalScore; // 높은 점수 우선
+			return a.name < b.name;                // 점수 같으면 이름순
+		});
+
+	// 5) 결과 문자열 구성
+	CString result;
+	result += _T("게임이 종료되었습니다.\r\n\r\n");
+
+	CString winLine;
+	winLine.Format(_T("승리자: %s (점수: %d점)\r\n\r\n"),
+		sorted[0].name.GetString(), sorted[0].finalScore);
+	result += winLine;
+
+	result += _T("[최종 순위]\r\n");
+	for (int i = 0; i < (int)sorted.size(); ++i)
+	{
+		const PlayerResult& p = sorted[i];
+		CString line;
+		line.Format(
+			_T("%d위: %s  (점수: %d, 남은 숫자합: %d, 조커: %d)\r\n"),
+			i + 1,
+			p.name.GetString(),
+			p.finalScore,
+			p.sumNumbers,
+			p.jokerCount
+		);
+		result += line;
+	}
+
+	// 6) 서버에서 메시지 박스로 출력
+	AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
+
+	// 7) 클라이언트들에게도 결과 브로드캐스트
+	//    result 문자열에는 '|'만 안 쓰면 됨. (\r\n은 그대로 전송해도 무방)
+	CString broadcast;
+	broadcast.Format(_T("type:EndGame|isNormalEnd:1|result:%s"),
+		result.GetString());
+
+	BroadcastMessage(broadcast, 0);
 }
 
 void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)

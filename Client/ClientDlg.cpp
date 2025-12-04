@@ -1379,20 +1379,49 @@ void CClientDlg::UpdatePlayerTileCount(DWORD_PTR nID, int nTileNum)
 }
 
 // 개인 타일수 업데이트 이후 타일수 업데이트 해주세요~ 요청
-void CClientDlg::UpdateSelfTileNum() {
-	//--타일수 업데이트;
+void CClientDlg::UpdateSelfTileNum()
+{
+	// -- 남은 타일 수 / 숫자 합 / 조커 개수 계산
 	int nCount = 0;
-	for (int i = 0; i < 4; i++)
-		for (int j = 0; j < 18; j++)
-			if (m_private_tile[i][j].tileId != -1) nCount++;
+	int sumNumbers = 0;
+	int jokerCount = 0;
+
+	for (int row = 0; row < 4; ++row)
+	{
+		for (int col = 0; col < 18; ++col)
+		{
+			const Tile& t = m_private_tile[row][col];
+
+			if (t.tileId == -1)
+				continue; // 빈 칸
+
+			++nCount;
+
+			if (t.isJoker)
+			{
+				++jokerCount;
+			}
+			else
+			{
+				sumNumbers += t.num;
+			}
+		}
+	}
 
 	m_intPrivateTileNum = nCount;
 
+	// 서버에 타일 수 + 합 + 조커 개수 전송
 	CString requestMsg;
-	requestMsg.Format(_T("type:UpdateTileNum|sender:%s|tilenum:%d"), m_strName, m_intPrivateTileNum);
+	requestMsg.Format(
+		_T("type:UpdateTileNum|sender:%s|tilenum:%d|sum:%d|joker:%d"),
+		m_strName,
+		m_intPrivateTileNum,
+		sumNumbers,
+		jokerCount
+	);
 	RequestMessage(requestMsg);
-
 }
+
 
 
 // player list 그리기
