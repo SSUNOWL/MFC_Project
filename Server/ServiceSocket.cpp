@@ -315,10 +315,6 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 }
             }
         }
-        else if (strType == _T("Backup")) {
-            m_pServerDlg->Backup();
-        }
-     
         else if (strType == _T("SetbackReq")) {
             CString strMsg;
             strMsg.Format(_T("type:Setback|sender:╫ц╫╨еш"));

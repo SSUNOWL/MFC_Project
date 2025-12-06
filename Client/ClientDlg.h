@@ -43,8 +43,6 @@ public:
 
 	void InitTiles();
 	void ClearBoards();
-	void CopyBoards();
-	void CopyBoardsReverse();
 	//void ShuffleTiles(int swaps = 300);
 	inline Tile MakeEmptyTile() const { return Tile{ BLACK, 0, false }; }
 	Tile ParseIdtoTile(int Tileid);

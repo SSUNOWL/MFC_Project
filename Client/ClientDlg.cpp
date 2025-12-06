@@ -162,32 +162,6 @@ void CClientDlg::ClearBoards() {
 		for (int c = 0; c < 18; ++c)
 			m_private_tile[r][c] = empty;
 }
-void CClientDlg::CopyBoards() {
-	int i = 0, j = 0;
-	for (i = 0; i < 14; i++)
-		for (j = 0; j < 28; j++)
-			m_old_public_tile[i][j] = m_public_tile[i][j];
-
-	for (i = 0; i < 4; i++)
-		for (j = 0; j < 18; j++)
-			m_old_private_tile[i][j] = m_private_tile[i][j];
-	
-	for (i = 0; i < 106; i++)
-		m_rand_tile_list_cpy[i] = m_rand_tile_list[i];
-}
-void CClientDlg::CopyBoardsReverse() {
-	int i = 0, j = 0;
-	for (i = 0; i < 14; i++)
-		for (j = 0; j < 28; j++)
-			m_public_tile[i][j] = m_old_public_tile[i][j];
-
-	for (i = 0; i < 4; i++)
-		for (j = 0; j < 18; j++)
-			m_private_tile[i][j] = m_old_private_tile[i][j];
-
-	for (i = 0; i < 106; i++)
-		m_rand_tile_list[i] = m_rand_tile_list_cpy[i];
-}
 	
 
 void CClientDlg::OnSysCommand(UINT nID, LPARAM lParam)
