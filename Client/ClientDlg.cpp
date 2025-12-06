@@ -1380,7 +1380,7 @@ void CClientDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	if (m_bisGameStarted) // 게임 진행 중에 서버가 탈주한 경우
+	if (m_pClientSocket && m_pClientSocket->IsConnected()) // 서버와 소켓 연결이 되어 있는 경우
 	{
 		CString requestMsg;
 		requestMsg.Format(_T("type:EndGame|sender:%s|isNormalEnd:0"), m_strName);
