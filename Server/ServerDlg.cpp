@@ -1442,10 +1442,15 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
-		// [규칙 2] 공용판 -> 개인판 이동 시 '기존 타일'인지 검사
+		// =========================================================================
+				// [규칙 2 수정] 기존 타일이 개인판으로 들어오는 것을 "양방향"으로 차단
+				// =========================================================================
+
+				// Case A: 공용판(선택) -> 개인판(클릭)으로 이동 시
 		if (m_bSelectedFromPublic && bClickedPrivate)
 		{
 			Tile& selectedTile = m_public_tile[m_nSelectedRow][m_nSelectedCol];
+			// 선택한 타일이 기존 타일이라면 회수 금지
 			if (IsExistingPublicTile(selectedTile.tileId))
 			{
 				CString strTmpLog;
@@ -1456,6 +1461,25 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 				m_bIsSelected = false; Invalidate(TRUE); return;
 			}
 		}
+		// Case B: 개인판(선택) -> 공용판(클릭)으로 스왑 시 (추가된 부분)
+		else if (!m_bSelectedFromPublic && bClickedPublic)
+		{
+			Tile& targetTile = m_public_tile[nRow][nCol]; // 공용판에 있는 타일(Target)
+
+			// 공용판의 타겟 위치가 빈칸이 아니고(실제 타일이 있고), 그 타일이 기존 타일이라면
+			// 스왑 시 기존 타일이 내 개인판으로 들어오게 되므로 막아야 함.
+			if (!(targetTile.color == BLACK && targetTile.num == 0 && !targetTile.isJoker) &&
+				IsExistingPublicTile(targetTile.tileId))
+			{
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 기존 타일과는 맞교환할 수 없습니다.\n(기존 타일이 개인판으로 들어올 수 없음)"));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+
+				m_bIsSelected = false; Invalidate(TRUE); return;
+			}
+		}
+		// =========================================================================
 
 		// --- 데이터 교환 (Swap) ---
 		Tile* pSourceTile = m_bSelectedFromPublic
