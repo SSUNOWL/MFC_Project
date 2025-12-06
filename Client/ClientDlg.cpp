@@ -1177,50 +1177,56 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	{
 		// [상태 2: 이동 시도]
 
-		// 같은 위치 다시 클릭 -> 선택 취소
+		// 제자리 클릭 취소
 		if (m_bSelectedFromPublic == bClickedPublic &&
 			m_nSelectedRow == nRow && m_nSelectedCol == nCol)
 		{
-			m_bIsSelected = false;
-			Invalidate(TRUE);
-			return;
-		}
-
-		// ========================================================
-		// [규칙 추가] 이동 제한 로직
-		// ========================================================
-		// 1. 내 턴이 아닐 때: 제출 불가 (동일)
-		if (!m_bCurrentTurn && bClickedPublic)
-		{
-			CString strTmpLog;
-			strTmpLog.Format(_T("[INFO] 내 턴이 아닐 때는 타일을 제출할 수 없습니다."));
-			m_list_message.AddString(strTmpLog);
-			m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
-			Invalidate(TRUE);
-
 			m_bIsSelected = false; Invalidate(TRUE); return;
 		}
 
-		// 2. 공용판 -> 개인판 이동 시 조건부 허용 (수정됨)
+		// [이동 제한 로직]
+
+		// 1. 내 턴이 아닐 때: 제출 불가
+		if (!m_bCurrentTurn && bClickedPublic)
+		{
+			// ... (기존 코드 동일) ...
+			m_bIsSelected = false; Invalidate(TRUE); return;
+		}
+
+		// 2. [Case A] 공용판(선택) -> 개인판(클릭) 이동 시 검사
 		if (m_bSelectedFromPublic && bClickedPrivate)
 		{
-			// 선택된 타일의 정보를 가져옴
 			Tile& selectedTile = m_public_tile[m_nSelectedRow][m_nSelectedCol];
-
-			// 원래부터 공용판에 있던 타일인지 검사
 			if (IsExistingPublicTile(selectedTile.tileId))
 			{
 				CString strTmpLog;
-				strTmpLog.Format(_T("[INFO] 기존에 있던 타일은 가져올 수 없습니다.\n(이번 턴에 낸 타일만 회수 가능)"));
+				strTmpLog.Format(_T("[INFO] 기존에 있던 타일은 가져올 수 없습니다."));
 				m_list_message.AddString(strTmpLog);
 				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
 				Invalidate(TRUE);
 
-				m_bIsSelected = false;
-				return;
+				m_bIsSelected = false; return;
 			}
+		}
 
-			// 여기에 걸리지 않으면(=이번 턴에 낸 타일이면) 이동 허용 (아래 Swap 로직 실행됨)
+		// 3. [Case B: 중요] 개인판(선택) -> 공용판(클릭) 스왑 시 검사 (추가된 부분)
+		// 내 손의 패와 공용판의 패를 바꿀 때, 공용판의 패가 '기존 타일'이면 내 손으로 들어오게 되므로 막아야 함
+		else if (!m_bSelectedFromPublic && bClickedPublic)
+		{
+			Tile& targetTile = m_public_tile[nRow][nCol]; // 클릭된 공용판 타일(타겟)
+
+			// 타겟이 빈 칸이 아니고(실제 타일과 스왑 시도), 그 타일이 기존 타일이라면
+			if (!(targetTile.color == BLACK && targetTile.num == 0 && !targetTile.isJoker) &&
+				IsExistingPublicTile(targetTile.tileId))
+			{
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 기존 타일과는 맞교환할 수 없습니다.\n(기존 타일이 개인판으로 들어올 수 없음)"));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+				Invalidate(TRUE);
+
+				m_bIsSelected = false; return;
+			}
 		}
 		// ========================================================
 
