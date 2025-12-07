@@ -182,9 +182,14 @@ BOOL CServerDlg::OnInitDialog()
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
 	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
 	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-	//InitControls();
 
-	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
+	CRect rectWindow;
+	GetWindowRect(&rectWindow);
+	SetWindowPos(NULL, 0, 0, DESIGN_WIDTH, DESIGN_HEIGHT, SWP_NOMOVE | SWP_NOZORDER);
+
+	InitControls();
+
+	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.	
 }
 
 void CServerDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -203,51 +208,60 @@ void CServerDlg::OnSysCommand(UINT nID, LPARAM lParam)
 // 대화 상자에 최소화 단추를 추가할 경우 아이콘을 그리려면
 //  아래 코드가 필요합니다.  문서/뷰 모델을 사용하는 MFC 애플리케이션의 경우에는
 //  프레임워크에서 이 작업을 자동으로 수행합니다.
-
 void CServerDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
-
+		// ... (최소화 상태 처리 코드 유지) ...
+		CPaintDC dc(this);
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
-		// 클라이언트 사각형에서 아이콘을 가운데에 맞춥니다.
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
 		CRect rect;
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
-
-		// 아이콘을 그립니다.
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
 	{
-		CPaintDC dc(this); 
-
+		CPaintDC dc(this);
+		// 1. 그리드 그리기 (점선)
+		// ---------------------------------------------------------
 		CPen line_pen(PS_DOT, 1, RGB(80, 80, 80));
 		CPen* p_old_pen = dc.SelectObject(&line_pen);
+
 		int i = 0;
+
+		// [공용판] 가로줄 (1 ~ 14)
 		for (i = 1; i < 15; i++) {
-			dc.MoveTo(35, 35 * i);
-			dc.LineTo(980, 35 * i);
+			// 디자인 좌표: (35, 35*i) -> (980, 35*i)
+			dc.MoveTo(GetScaledPoint(CPoint(35, 35 * i)));
+			dc.LineTo(GetScaledPoint(CPoint(980, 35 * i)));
 		}
+
+		// [공용판] 세로줄 (1 ~ 28)
 		for (i = 1; i < 29; i++) {
-			dc.MoveTo(35 * i, 35);
-			dc.LineTo(35 * i, 490);
+			// 디자인 좌표: (35*i, 35) -> (35*i, 490)
+			dc.MoveTo(GetScaledPoint(CPoint(35 * i, 35)));
+			dc.LineTo(GetScaledPoint(CPoint(35 * i, 490)));
 		}
+
 		dc.SelectObject(p_old_pen);
 		line_pen.DeleteObject();
-		for (i = 0; i < 4; i++) {
-			dc.MoveTo(105, 555 + 35 * i);
-			dc.LineTo(700, 555 + 35 * i);
 
+		// [개인판] 가로줄 (0 ~ 3)
+		for (i = 0; i < 4; i++) {
+			// 디자인 좌표: (105, 555 + 35*i) -> (700, 555 + 35*i)
+			dc.MoveTo(GetScaledPoint(CPoint(105, 555 + 35 * i)));
+			dc.LineTo(GetScaledPoint(CPoint(700, 555 + 35 * i)));
 		}
+
+		// [개인판] 세로줄 (0 ~ 17)
 		for (i = 0; i < 18; i++) {
-			dc.MoveTo(105 + 35 * i, 555);
-			dc.LineTo(105 + 35 * i, 555 + 35 * 3);
+			// 디자인 좌표: (105 + 35*i, 555) -> (105 + 35*i, 660)
+			dc.MoveTo(GetScaledPoint(CPoint(105 + 35 * i, 555)));
+			dc.LineTo(GetScaledPoint(CPoint(105 + 35 * i, 555 + 35 * 3)));
 		}
 
 		DrawMyTiles(dc);
@@ -256,28 +270,36 @@ void CServerDlg::OnPaint()
 		// ==========================================
 		if (m_bIsSelected)
 		{
-			CPen redPen(PS_SOLID, 3, RGB(255, 0, 0));
+			// [수정] 펜 두께도 스케일링
+			int penWidth = GetScaledSize(3);
+
+			CPen redPen(PS_SOLID, penWidth, RGB(255, 0, 0));
 			CPen* pOldPen = dc.SelectObject(&redPen);
 			CBrush* pOldBrush = (CBrush*)dc.SelectStockObject(NULL_BRUSH);
 
-			int startX = 0, startY = 0;
+			int designStartX = 0, designStartY = 0;
+			const int TILE_SIZE_DESIGN = 35; // 타일 셀 크기
 
-			// 좌표 계산 (서버와 클라이언트 좌표계 동일)
+			// 1. 디자인 기준 좌표(논리 좌표) 계산
 			if (m_bSelectedFromPublic)
 			{
 				// 공용판: (35, 35) 시작
-				startX = 35 + (m_nSelectedCol - 1) * 35;
-				startY = 35 + (m_nSelectedRow - 1) * 35;
+				designStartX = 35 + (m_nSelectedCol - 1) * TILE_SIZE_DESIGN;
+				designStartY = 35 + (m_nSelectedRow - 1) * TILE_SIZE_DESIGN;
 			}
 			else
 			{
 				// 개인판: (105, 555) 시작
-				startX = 105 + (m_nSelectedCol - 1) * 35;
-				startY = 555 + (m_nSelectedRow - 1) * 35;
+				designStartX = 105 + (m_nSelectedCol - 1) * TILE_SIZE_DESIGN;
+				designStartY = 555 + (m_nSelectedRow - 1) * TILE_SIZE_DESIGN;
 			}
 
-			// 테두리 그리기 (35x35)
-			dc.Rectangle(startX, startY, startX + 35, startY + 35);
+			// 2. 실제 화면 좌표(물리 좌표)로 변환
+			CPoint ptTopLeft = GetScaledPoint(CPoint(designStartX, designStartY));
+			CPoint ptBottomRight = GetScaledPoint(CPoint(designStartX + TILE_SIZE_DESIGN, designStartY + TILE_SIZE_DESIGN));
+
+			// 3. 변환된 좌표로 테두리 그리기
+			dc.Rectangle(CRect(ptTopLeft, ptBottomRight));
 
 			dc.SelectObject(pOldPen);
 			dc.SelectObject(pOldBrush);
@@ -286,7 +308,6 @@ void CServerDlg::OnPaint()
 		CDialogEx::OnPaint();
 	}
 }
-
 
 void CServerDlg::AddLog(const CString& strMsg)
 {
@@ -1403,94 +1424,95 @@ int CServerDlg::GetTileImageIndex(const Tile& tile) const
 
 	return base + numIndex;   // 첫 번째 세트만 사용 (0~90 범위)
 }
-
 void CServerDlg::DrawMyTiles(CDC& dc)
 {
-    // 공통 상수
-    const int CELL_SIZE      = 35;
-    const int TILE_DRAW_SIZE = 32;
-    const int OFFSET         = (CELL_SIZE - TILE_DRAW_SIZE) / 2 + 1;
+	// [수정] 모든 상수를 디자인 기준으로 고정
+	const int CELL_SIZE = 35;
+	const int TILE_DRAW_SIZE = 32;
+	const int OFFSET_DESIGN = 1; // (35 - 32) / 2 + 1 = 2
 
-    // 실제 타일 내용 영역 크기 (여백 제외하고 쓰고 싶은 크기)
-    const int CONTENT_W = 68;
-    const int CONTENT_H = 68;
+	// 실제 타일 내용 영역 크기 (원본 이미지 크기이므로 스케일링하지 않음)
+	const int CONTENT_W = 68;
+	const int CONTENT_H = 68;
 
-    // === 공용판 그리기 ===
-    const int PUBLIC_START_X = 35;
-    const int PUBLIC_START_Y = 35;
+	// [수정] 그릴 크기(32)만 스케일링
+	const int DRAW_SIZE_S = GetScaledSize(TILE_DRAW_SIZE);
 
-    for (int row = 1; row <= 13; ++row)
-    {
-        for (int col = 1; col <= 27; ++col)
-        {
-            const Tile& t = m_public_tile[row][col];
+	// === 공용판 그리기 ===
+	const int PUBLIC_START_X = 35;
+	const int PUBLIC_START_Y = 35;
 
-            // 빈 타일 스킵 (BLACK, 0, false 기준)
-            if (t.color == BLACK && t.num == 0 && !t.isJoker)
-                continue;
+	for (int row = 1; row <= 13; ++row)
+	{
+		for (int col = 1; col <= 27; ++col)
+		{
+			const Tile& t = m_public_tile[row][col];
+			if (t.color == BLACK && t.num == 0 && !t.isJoker) continue;
 
-            int imgIndex = GetTileImageIndex(t);
-            if (imgIndex < 0) continue;
-            if (m_tile_image_list[imgIndex].IsNull()) continue;
+			int imgIndex = GetTileImageIndex(t);
+			if (imgIndex < 0 || m_tile_image_list[imgIndex].IsNull()) continue;
 
-            // 원본 이미지 크기
-            int imgW = m_tile_image_list[imgIndex].GetWidth();
-            int imgH = m_tile_image_list[imgIndex].GetHeight();
+			// 원본 이미지 크기 및 자르기 로직 (스케일링 제외)
+			int imgW = m_tile_image_list[imgIndex].GetWidth();
+			int imgH = m_tile_image_list[imgIndex].GetHeight();
+			int srcW = min(CONTENT_W, imgW);
+			int srcH = min(CONTENT_H, imgH);
+			int srcX = max(0, (imgW - srcW) / 2 - 1);
+			int srcY = max(0, (imgH - srcH) / 2 - 1);
 
-            // 원본 중앙에서 68x68만 잘라오기
-            int srcW = min(CONTENT_W, imgW);
-            int srcH = min(CONTENT_H, imgH);
-            int srcX = max(0, (imgW - srcW) / 2 - 1);
-            int srcY = max(0, (imgH - srcH) / 2 - 1);
+			// [수정] 최종 그릴 위치를 디자인 좌표계에서 계산
+			int designDrawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET_DESIGN;
+			int designDrawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET_DESIGN;
 
-            int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
-            int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+			// 최종 디자인 좌표를 스케일링
+			CPoint ptDraw = GetScaledPoint(CPoint(designDrawX, designDrawY));
+			int drawX = ptDraw.x;
+			int drawY = ptDraw.y;
 
-            // 잘라낸 영역(srcX,srcY,srcW,srcH)을 30x30으로 축소해서 셀 안에 그림
-            m_tile_image_list[imgIndex].Draw(
-                dc,
-                drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,  // 목적지(보드) 영역
-                srcX,  srcY,  srcW,            srcH            // 원본에서 자를 영역
-            );
-        }
-    }
+			m_tile_image_list[imgIndex].Draw(
+				dc,
+				drawX, drawY, DRAW_SIZE_S, DRAW_SIZE_S,  // 목적지 영역: 위치(스케일), 크기(스케일)
+				srcX, srcY, srcW, srcH           // 원본 영역: 크기(원본 픽셀)
+			);
+		}
+	}
 
-    // === 개인판 그리기 ===
-    const int PRIVATE_START_X = 105;
-    const int PRIVATE_START_Y = 555;
+	// === 개인판 그리기 ===
+	const int PRIVATE_START_X = 105;
+	const int PRIVATE_START_Y = 555;
 
-    for (int row = 1; row <= 3; ++row)
-    {
-        for (int col = 1; col <= 17; ++col)
-        {
-            const Tile& t = m_private_tile[row][col];
+	for (int row = 1; row <= 3; ++row)
+	{
+		for (int col = 1; col <= 17; ++col)
+		{
+			const Tile& t = m_private_tile[row][col];
+			if (t.color == BLACK && t.num == 0 && !t.isJoker) continue;
 
-            // 빈 타일 스킵
-            if (t.color == BLACK && t.num == 0 && !t.isJoker)
-                continue;
+			int imgIndex = GetTileImageIndex(t);
+			if (imgIndex < 0 || m_tile_image_list[imgIndex].IsNull()) continue;
 
-            int imgIndex = GetTileImageIndex(t);
-            if (imgIndex < 0) continue;
-            if (m_tile_image_list[imgIndex].IsNull()) continue;
+			int imgW = m_tile_image_list[imgIndex].GetWidth();
+			int imgH = m_tile_image_list[imgIndex].GetHeight();
+			int srcW = min(CONTENT_W, imgW);
+			int srcH = min(CONTENT_H, imgH);
+			int srcX = max(0, (imgW - srcW) / 2);
+			int srcY = max(0, (imgH - srcH) / 2);
 
-            int imgW = m_tile_image_list[imgIndex].GetWidth();
-            int imgH = m_tile_image_list[imgIndex].GetHeight();
+			// [수정] 최종 그릴 위치를 디자인 좌표계에서 계산
+			int designDrawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET_DESIGN;
+			int designDrawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET_DESIGN;
 
-            int srcW = min(CONTENT_W, imgW);
-            int srcH = min(CONTENT_H, imgH);
-            int srcX = max(0, (imgW - srcW) / 2);
-            int srcY = max(0, (imgH - srcH) / 2);
+			CPoint ptDraw = GetScaledPoint(CPoint(designDrawX, designDrawY));
+			int drawX = ptDraw.x;
+			int drawY = ptDraw.y;
 
-            int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
-            int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
-
-            m_tile_image_list[imgIndex].Draw(
-                dc,
-                drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,
-                srcX,  srcY,  srcW,            srcH
-            );
-        }
-    }
+			m_tile_image_list[imgIndex].Draw(
+				dc,
+				drawX, drawY, DRAW_SIZE_S, DRAW_SIZE_S,
+				srcX, srcY, srcW, srcH
+			);
+		}
+	}
 }
 
 void CServerDlg::OnDestroy()
@@ -1500,36 +1522,38 @@ void CServerDlg::OnDestroy()
 }
 
 // ServerDlg.cpp - OnLButtonDown 함수 전체 수정
-
 void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	// 1. 클릭된 위치 확인 (기존 로직)
+	// [수정] 1. 실제 클릭 좌표(Screen) -> 디자인 좌표(Logic)로 역변환
+	CPoint ptLogic = ScreenToDesign(point);
+
 	bool bClickedPublic = false;
 	bool bClickedPrivate = false;
 	int nRow = -1, nCol = -1;
+	const int TILE_SIZE_DESIGN = 35; // 타일 셀 크기 (디자인 기준)
 
-	// 공용판 범위
-	if (point.x >= 35 && point.x < 35 + 27 * 35 &&
-		point.y >= 35 && point.y < 35 + 13 * 35)
+	// 공용판 범위 (ptLogic 사용)
+	if (ptLogic.x >= 35 && ptLogic.x < 35 + 27 * TILE_SIZE_DESIGN &&
+		ptLogic.y >= 35 && ptLogic.y < 35 + 13 * TILE_SIZE_DESIGN)
 	{
 		bClickedPublic = true;
-		nCol = (point.x - 35) / 35 + 1;
-		nRow = (point.y - 35) / 35 + 1;
+		nCol = (ptLogic.x - 35) / TILE_SIZE_DESIGN + 1;
+		nRow = (ptLogic.y - 35) / TILE_SIZE_DESIGN + 1;
 	}
-	// 개인판 범위
-	else if (point.x >= 105 && point.x < 105 + 17 * 35 &&
-		point.y >= 555 && point.y < 555 + 3 * 35)
+	// 개인판 범위 (ptLogic 사용)
+	else if (ptLogic.x >= 105 && ptLogic.x < 105 + 17 * TILE_SIZE_DESIGN &&
+		ptLogic.y >= 555 && ptLogic.y < 555 + 3 * TILE_SIZE_DESIGN)
 	{
 		bClickedPrivate = true;
-		nCol = (point.x - 105) / 35 + 1;
-		nRow = (point.y - 555) / 35 + 1;
+		nCol = (ptLogic.x - 105) / TILE_SIZE_DESIGN + 1;
+		nRow = (ptLogic.y - 555) / TILE_SIZE_DESIGN + 1;
 	}
 	else
 	{
 		if (m_bIsSelected) {
 			m_bIsSelected = false; Invalidate(TRUE);
 		}
-		CDialogEx::OnLButtonDown(nFlags, point);
+		CDialogEx::OnLButtonDown(nFlags, point); // 부모 클래스에는 원본 좌표 전달
 		return;
 	}
 
@@ -2121,26 +2145,40 @@ void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 void CServerDlg::InitControls() {
+	// [수정] 모든 좌표와 크기에 스케일링 적용
+
+	// 헬퍼 함수: 디자인 좌표와 크기로 CRect를 생성하고 스케일링된 CRect를 반환
+	auto ScaleRect = [this](int x, int y, int w, int h) -> CRect {
+		CPoint ptTopLeft = GetScaledPoint(CPoint(x, y));
+		CPoint ptBottomRight = GetScaledPoint(CPoint(x + w, y + h));
+		return CRect(ptTopLeft, ptBottomRight);
+		};
+
 	/// [PLAY / 제출] 버튼
-		if (GetDlgItem(IDC_BUTTON_PLAY)) {
-			GetDlgItem(IDC_BUTTON_PLAY)->MoveWindow(720, 555, 80, 40);
-		}
+	if (GetDlgItem(IDC_BUTTON_PLAY)) {
+		// [720, 555] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_PLAY)->MoveWindow(ScaleRect(720, 555, 80, 40));
+	}
 	// [PASS / 턴넘김] 버튼
 	if (GetDlgItem(IDC_BUTTON_PASS)) {
-		GetDlgItem(IDC_BUTTON_PASS)->MoveWindow(810, 555, 80, 40);
+		// [810, 555] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_PASS)->MoveWindow(ScaleRect(810, 555, 80, 40));
 	}
 	// [RECEIVE / 타일받기] 버튼
 	if (GetDlgItem(IDC_BUTTON_RECEIVE)) {
-		GetDlgItem(IDC_BUTTON_RECEIVE)->MoveWindow(720, 605, 80, 40);
+		// [720, 605] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_RECEIVE)->MoveWindow(ScaleRect(720, 605, 80, 40));
 	}
 	// [SETBACK / 되돌리기] 버튼
 	if (GetDlgItem(IDC_BUTTON_SetBack)) {
-		GetDlgItem(IDC_BUTTON_SetBack)->MoveWindow(810, 605, 80, 40);
+		// [810, 605] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_SetBack)->MoveWindow(ScaleRect(810, 605, 80, 40));
 	}
 
-	// [플레이어 목록] (버튼들 옆에 배치)
+	// [플레이어 목록]
 	if (GetDlgItem(IDC_LIST_PLAYER)) {
-		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(900, 555, 150, 90);
+		// [900, 555] 위치, 150x90 크기
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 150, 90));
 	}
 
 
@@ -2148,30 +2186,36 @@ void CServerDlg::InitControls() {
 	// 3. [오른쪽 상단] 공용판(width=980) 옆 빈 공간 (x > 1000)
 	// -------------------------------------------------------------
 
-	// [시작] 버튼 (가장 잘 보이게 위쪽)
+	// [시작] 버튼
 	if (GetDlgItem(IDC_BUTTON_START)) {
-		GetDlgItem(IDC_BUTTON_START)->MoveWindow(1000, 35, 250, 40);
+		// [1000, 35] 위치, 250x40 크기
+		GetDlgItem(IDC_BUTTON_START)->MoveWindow(ScaleRect(1000, 35, 250, 40));
 	}
 
 	// [채팅/메시지 목록]
 	if (GetDlgItem(IDC_LIST_MESSAGE)) {
-		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(1000, 85, 250, 200);
+		// [1000, 85] 위치, 250x200 크기
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 200));
 	}
 
 	// [시스템 로그 목록]
 	if (GetDlgItem(IDC_LIST_LOG)) {
-		GetDlgItem(IDC_LIST_LOG)->MoveWindow(1000, 295, 250, 150);
+		// [1000, 295] 위치, 250x150 크기
+		GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 295, 250, 150));
 	}
 
 	// [채팅 입력창]
 	if (GetDlgItem(IDC_EDIT_SEND)) {
-		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(1000, 455, 180, 30);
+		// [1000, 455] 위치, 180x30 크기
+		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(ScaleRect(1000, 455, 180, 30));
 	}
 	// [보내기 버튼]
 	if (GetDlgItem(IDC_BUTTON_SEND)) {
-		GetDlgItem(IDC_BUTTON_SEND)->MoveWindow(1190, 455, 60, 30);
+		// [1190, 455] 위치, 60x30 크기
+		GetDlgItem(IDC_BUTTON_SEND)->MoveWindow(ScaleRect(1190, 455, 60, 30));
 	}
 }
+
 BOOL CServerDlg::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: 여기에 특수화된 코드를 추가 및/또는 기본 클래스를 호출합니다.
@@ -2184,4 +2228,66 @@ BOOL CServerDlg::PreTranslateMessage(MSG* pMsg)
 	}
 
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+
+
+double CServerDlg::GetDPIScale()
+{
+	CClientDC dc(this);
+	// 가로 방향 DPI를 가져옵니다 (보통 가로/세로 비율은 같습니다)
+	int currentDPI = dc.GetDeviceCaps(LOGPIXELSX);
+	return (double)currentDPI / 96.0;
+}
+
+// 2. 현재 창 크기 대비 가로/세로 비율 (해상도 스케일링)
+double CServerDlg::GetScaleX()
+{
+	CRect rectClient;
+	GetClientRect(&rectClient);
+	// 현재 창 가로 크기 / 디자인 가로 크기
+	return (double)rectClient.Width() / DESIGN_WIDTH;
+}
+
+double CServerDlg::GetScaleY()
+{
+	CRect rectClient;
+	GetClientRect(&rectClient);
+	// 현재 창 세로 크기 / 디자인 세로 크기
+	return (double)rectClient.Height() / DESIGN_HEIGHT;
+}
+
+// 3. 그리기용: 디자인 좌표 -> 화면 좌표 (곱하기)
+CPoint CServerDlg::GetScaledPoint(CPoint designPt)
+{
+	CPoint finalPt;
+	// GetScaleX/Y를 사용하여 해상도 변화 비율을 적용합니다.
+	finalPt.x = (long)(designPt.x * GetScaleX());
+	finalPt.y = (long)(designPt.y * GetScaleY());
+	return finalPt;
+}
+
+// 4. 클릭용: 화면 좌표 -> 디자인 좌표 (나누기)
+CPoint CServerDlg::ScreenToDesign(CPoint screenPt)
+{
+	CPoint logicPt;
+	double scaleX = GetScaleX();
+	double scaleY = GetScaleY();
+
+	// 0으로 나누기 방지
+	if (scaleX == 0) scaleX = 1;
+	if (scaleY == 0) scaleY = 1;
+
+	// 현재 화면 픽셀 좌표를 비율로 나누어 디자인 좌표로 역변환합니다.
+	logicPt.x = (long)(screenPt.x / scaleX);
+	logicPt.y = (long)(screenPt.y / scaleY);
+	return logicPt;
+}
+
+// 5. 크기용: DPI 배율만 고려하여 크기 반환
+int CServerDlg::GetScaledSize(int designSize)
+{
+	// 펜 두께 등은 DPI 배율만 따르는 것이 일반적이므로 GetDPIScale을 사용합니다.
+	double dpiScale = GetDPIScale();
+	return (int)(designSize * dpiScale);
 }

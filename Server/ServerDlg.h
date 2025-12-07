@@ -8,6 +8,8 @@
 #include <list>
 #include <map>
 #include <algorithm>
+#define DESIGN_WIDTH  1280
+#define DESIGN_HEIGHT 720
 
 // CServerDlg 대화 상자
 class CServerDlg : public CDialogEx
@@ -16,8 +18,6 @@ class CServerDlg : public CDialogEx
 public:
 	CServerDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
 	virtual ~CServerDlg();
-	const int DESIGN_WIDTH = 1920;
-	const int DESIGN_HEIGHT = 1080;
 	// 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_SERVER_DIALOG };
