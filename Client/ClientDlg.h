@@ -130,4 +130,5 @@ public:
 	bool m_bFirstSubmit; // 첫 번째 제출 여부
 	void InitControls();
 
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };
