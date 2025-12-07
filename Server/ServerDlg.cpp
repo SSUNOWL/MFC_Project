@@ -2210,7 +2210,7 @@ void CServerDlg::InitControls() {
 	// [플레이어 목록]
 	if (GetDlgItem(IDC_LIST_PLAYER)) {
 		// [900, 555] 위치, 150x90 크기
-		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 150, 90));
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 90));
 	}
 
 
@@ -2227,14 +2227,14 @@ void CServerDlg::InitControls() {
 	// [채팅/메시지 목록]
 	if (GetDlgItem(IDC_LIST_MESSAGE)) {
 		// [1000, 85] 위치, 250x200 크기
-		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 200));
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 350));
 	}
 
 	// [시스템 로그 목록]
-	if (GetDlgItem(IDC_LIST_LOG)) {
-		// [1000, 295] 위치, 250x150 크기
-		GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 295, 250, 150));
-	}
+	//if (GetDlgItem(IDC_LIST_LOG)) {
+	//	// [1000, 295] 위치, 250x150 크기
+	//	GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 295, 250, 150));
+	//}
 
 	// [채팅 입력창]
 	if (GetDlgItem(IDC_EDIT_SEND)) {
