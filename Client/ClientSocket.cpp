@@ -386,7 +386,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 }
             }
             if (messageMap.Lookup(_T("Name"), strName)) {
-                m_pClientDlg->DisplayMessage(strName,_T("´ÔÀÌ ÅğÀåÇÏ¼Ì½À´Ï´Ù."),TRUE);
+                m_pClientDlg->DisplayMessage(strName,_T("´ÔÀÌ ÅğÀåÇß½À´Ï´Ù."),TRUE);
             }
         }
     }
