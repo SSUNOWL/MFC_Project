@@ -1114,9 +1114,14 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 	// [수정] 그릴 크기(32)만 스케일링
 	const int DRAW_SIZE_S = GetScaledSize(TILE_DRAW_SIZE);
 
-	// === 공용판 그리기 ===
 	const int PUBLIC_START_X = 35;
 	const int PUBLIC_START_Y = 35;
+	const double scaleX = GetScaleX();
+	const double scaleY = GetScaleY();
+
+	// 2. [수정] 타일이 그려질 최종 크기에 스케일링 비율을 적용합니다.
+	const int DRAW_SIZE_W = (int)(TILE_DRAW_SIZE * scaleX);
+	const int DRAW_SIZE_H = (int)(TILE_DRAW_SIZE * scaleY);
 
 	for (int row = 1; row <= 13; ++row)
 	{
@@ -1128,7 +1133,7 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 			int imgIndex = GetTileImageIndex(t);
 			if (imgIndex < 0 || m_tile_image_list[imgIndex].IsNull()) continue;
 
-			// ... (원본 이미지 자르기 로직 생략) ...
+			// 원본 이미지 크기 및 자르기 로직 (스케일링 제외)
 			int imgW = m_tile_image_list[imgIndex].GetWidth();
 			int imgH = m_tile_image_list[imgIndex].GetHeight();
 			int srcW = min(CONTENT_W, imgW);
@@ -1147,8 +1152,8 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 
 			m_tile_image_list[imgIndex].Draw(
 				dc,
-				drawX, drawY, DRAW_SIZE_S, DRAW_SIZE_S,  // 목적지 영역: 위치(스케일), 크기(스케일)
-				srcX, srcY, srcW, srcH
+				drawX, drawY, DRAW_SIZE_W, DRAW_SIZE_H,  // 목적지 영역: 위치(스케일), 크기(스케일)
+				srcX, srcY, srcW, srcH           // 원본 영역: 크기(원본 픽셀)
 			);
 		}
 	}
@@ -1163,9 +1168,10 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 		{
 			const Tile& t = m_private_tile[row][col];
 			if (t.color == BLACK && t.num == 0 && !t.isJoker) continue;
-			// ... (이미지 체크 및 자르기 로직 생략) ...
+
 			int imgIndex = GetTileImageIndex(t);
 			if (imgIndex < 0 || m_tile_image_list[imgIndex].IsNull()) continue;
+
 			int imgW = m_tile_image_list[imgIndex].GetWidth();
 			int imgH = m_tile_image_list[imgIndex].GetHeight();
 			int srcW = min(CONTENT_W, imgW);
@@ -1183,7 +1189,7 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 
 			m_tile_image_list[imgIndex].Draw(
 				dc,
-				drawX, drawY, DRAW_SIZE_S, DRAW_SIZE_S,
+				drawX, drawY, DRAW_SIZE_W, DRAW_SIZE_H,
 				srcX, srcY, srcW, srcH
 			);
 		}

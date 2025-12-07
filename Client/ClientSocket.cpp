@@ -129,7 +129,7 @@ void CClientSocket::OnClose(int nErrorCode)
     {
         //  UI 상태 업데이트
         CString strLog;
-        strLog.Format(_T("INFO: 서버와의 연결이 끊어졌습니다. (에러코드: %d)"), nErrorCode);
+        strLog.Format(_T("서버와 연결 해제됨"));
         m_pClientDlg->m_static_status.SetWindowText(strLog);
 
         CString tmpString;
