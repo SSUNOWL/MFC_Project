@@ -2183,6 +2183,23 @@ void CServerDlg::HandleGameOver(CServiceSocket* pWinnerSocket)
 	// 6) 서버에서 메시지 박스로 출력
 	AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
 
+	for (int i = 0; i < 3; i++) {
+		CString strTmpLog;
+		strTmpLog.Format(_T("[INFO] 게임이 종료됩니다. (%d초 이후 종료)"), (3 - i));
+		m_list_message.AddString(strTmpLog);
+		m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+		//m_pServerDlg->Invalidate(TRUE);
+		UpdateWindow();
+
+		Sleep(1000);
+	}
+
+	// 다이얼로그 닫기
+	PostMessage(WM_CLOSE);
+	if (GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+	{
+		PostMessage(WM_CLOSE);
+	}
 
 	// 다이얼로그 닫기
 	PostMessage(WM_CLOSE);
@@ -2376,6 +2393,7 @@ int CServerDlg::GetScaledSize(int designSize)
 	double dpiScale = GetDPIScale();
 	return (int)(designSize * dpiScale);
 }
+
 void CServerDlg::ClearBoards()
 {
 	const Tile empty = MakeEmpty();

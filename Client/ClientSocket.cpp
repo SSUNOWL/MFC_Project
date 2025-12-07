@@ -315,12 +315,21 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 }
 
 
-                // 다이얼로그 닫기
-                m_pClientDlg->PostMessage(WM_CLOSE);
+                for (int i = 0; i < 3; i++) {
+                    CString strTmpLog;
+                    strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
+                    m_pClientDlg->m_list_message.AddString(strTmpLog);
+                    m_pClientDlg->m_list_message.SetTopIndex(m_pClientDlg->m_list_message.GetCount() - 1);
+                    //m_pClientDlg->Invalidate(TRUE);
+                    m_pClientDlg->UpdateWindow();
+
+                    Sleep(1000);
+                }
                 if (m_pClientDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
                 {
                     m_pClientDlg->PostMessage(WM_CLOSE);
                 }
+
             }
         }
         else if (strType == _T("GameStarted")) {
