@@ -255,65 +255,65 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             }
         }
         else if (strType == _T("EndGame")) {
-            CString tmpString;
-            int isNormalEnd = -1;
-            if (messageMap.Lookup(_T("isNormalEnd"), tmpString)) {
-                isNormalEnd = _ttoi(tmpString);
-            }
+        //    CString tmpString;
+        //    int isNormalEnd = -1;
+        //    if (messageMap.Lookup(_T("isNormalEnd"), tmpString)) {
+        //        isNormalEnd = _ttoi(tmpString);
+        //    }
 
-            if (isNormalEnd == 0) { // 비정상적으로 종료된 경우
-                if (!m_pServerDlg->m_bisGameStarted) { // 아직 게임이 시작되지 않은 경우
-                    // IDC_LIST_PLAYER에서 strSender 이름을 가진 항목 제거
-                    int nCount = m_pServerDlg->m_listPlayer.GetItemCount();
-                    for (int i = 0; i < nCount; i++)
-                    {
-                        CString strPlayerName = m_pServerDlg->m_listPlayer.GetItemText(i, 0);
-                        if (strPlayerName == strSender)
-                        {
-                            m_pServerDlg->m_listPlayer.DeleteItem(i);
-                            break;
-                        }
-                    }
+        //    if (isNormalEnd == 0) { // 비정상적으로 종료된 경우
+        //        if (!m_pServerDlg->m_bisGameStarted) { // 아직 게임이 시작되지 않은 경우
+        //            // IDC_LIST_PLAYER에서 strSender 이름을 가진 항목 제거
+        //            int nCount = m_pServerDlg->m_listPlayer.GetItemCount();
+        //            for (int i = 0; i < nCount; i++)
+        //            {
+        //                CString strPlayerName = m_pServerDlg->m_listPlayer.GetItemText(i, 0);
+        //                if (strPlayerName == strSender)
+        //                {
+        //                    m_pServerDlg->m_listPlayer.DeleteItem(i);
+        //                    break;
+        //                }
+        //            }
 
-                    m_pServerDlg->Invalidate(TRUE);
-                }
-                else { // 게임이 진행 중이던 경우
-                    // 게임 종료
-                    m_pServerDlg->m_bisGameStarted = false;
+        //            m_pServerDlg->Invalidate(TRUE);
+        //        }
+        //        else { // 게임이 진행 중이던 경우
+        //            // 게임 종료
+        //            m_pServerDlg->m_bisGameStarted = false;
 
-				    // 송신자를 제외한 모든 클라이언트에게 게임 종료 메시지 전송
-                    CServiceSocket* pSender = NULL;
-                    POSITION pos = m_pServerDlg->m_clientSocketList.GetHeadPosition();
-                    while (pos != NULL) {
-                        CServiceSocket* pSocket = m_pServerDlg->m_clientSocketList.GetNext(pos);
-                        if (pSocket && (pSocket->m_strName == strSender)) {
-                            pSender = pSocket;
-                        }
-                    }
+				    //// 송신자를 제외한 모든 클라이언트에게 게임 종료 메시지 전송
+        //            CServiceSocket* pSender = NULL;
+        //            POSITION pos = m_pServerDlg->m_clientSocketList.GetHeadPosition();
+        //            while (pos != NULL) {
+        //                CServiceSocket* pSocket = m_pServerDlg->m_clientSocketList.GetNext(pos);
+        //                if (pSocket && (pSocket->m_strName == strSender)) {
+        //                    pSender = pSocket;
+        //                }
+        //            }
 
-                    CString requestMsg;
-                    requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
-                    m_pServerDlg->BroadcastMessage(requestMsg, pSender);
-                
-                    for (int i = 0; i < 3; i++) {
-                        CString strTmpLog;  
-                        strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
-                        m_pServerDlg->m_list_message.AddString(strTmpLog);
-                        m_pServerDlg->m_list_message.SetTopIndex(m_pServerDlg->m_list_message.GetCount() - 1);
-                        //m_pServerDlg->Invalidate(TRUE);
-                        m_pServerDlg->UpdateWindow();
+        //            CString requestMsg;
+        //            requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
+        //            m_pServerDlg->BroadcastMessage(requestMsg, pSender);
+        //        
+        //            for (int i = 0; i < 3; i++) {
+        //                CString strTmpLog;  
+        //                strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
+        //                m_pServerDlg->m_list_message.AddString(strTmpLog);
+        //                m_pServerDlg->m_list_message.SetTopIndex(m_pServerDlg->m_list_message.GetCount() - 1);
+        //                //m_pServerDlg->Invalidate(TRUE);
+        //                m_pServerDlg->UpdateWindow();
 
-                        Sleep(1000);
-                    }
+        //                Sleep(1000);
+        //            }
 
-                    // 다이얼로그 닫기
-                    m_pServerDlg->PostMessage(WM_CLOSE);
-                    if (m_pServerDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
-                    {
-                        m_pServerDlg->PostMessage(WM_CLOSE);
-                    }
-                }
-            }
+        //            // 다이얼로그 닫기
+        //            m_pServerDlg->PostMessage(WM_CLOSE);
+        //            if (m_pServerDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+        //            {
+        //                m_pServerDlg->PostMessage(WM_CLOSE);
+        //            }
+        //        }
+        //    }
         }
         else if (strType == _T("SetbackReq")) {
             CString strMsg;

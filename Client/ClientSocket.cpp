@@ -131,6 +131,7 @@ void CClientSocket::OnClose(int nErrorCode)
         CString strLog;
         strLog.Format(_T("INFO: 서버와의 연결이 끊어졌습니다. (에러코드: %d)"), nErrorCode);
         m_pClientDlg->m_static_status.SetWindowText(strLog);
+        
     }
     CAsyncSocket::OnClose(nErrorCode);
 }

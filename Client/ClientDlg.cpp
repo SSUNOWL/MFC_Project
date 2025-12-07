@@ -295,6 +295,19 @@ void CClientDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 void CClientDlg::OnBnClickedButtonConnect()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 이미 게임이 진행 중입니다."));
@@ -364,6 +377,19 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 void CClientDlg::OnBnClickedButtonSend()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	// 1. 입력창에서 메시지 가져오기
 	CString strSend;
 	m_edit_send.GetWindowText(strSend);
@@ -797,6 +823,19 @@ int CClientDlg::CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun
 
 void CClientDlg::OnBnClickedButtonPass()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
@@ -858,6 +897,20 @@ void CClientDlg::OnBnClickedButtonPass()
 
 void CClientDlg::OnBnClickedButtonReceive()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
+
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
@@ -1372,6 +1425,19 @@ void CClientDlg::OnDestroy()
 
 void CClientDlg::OnBnClickedButtonSetback()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
