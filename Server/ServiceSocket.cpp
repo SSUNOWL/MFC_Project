@@ -154,12 +154,12 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
                 strSender.GetString(),
                 strTilenum.GetString()
             );
-            m_pServerDlg->AddLog(strLog);
+            //m_pServerDlg->AddLog(strLog);
         }
         else
         {
             // 나머지 타입은 기존처럼 전체 로그
-            m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
+            //m_pServerDlg->AddLog(_T("RECV: ") + strMessage);
         }
 
         if (strType == _T("CHAT")) {

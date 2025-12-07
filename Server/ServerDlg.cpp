@@ -314,10 +314,44 @@ void CServerDlg::AddLog(const CString& strMsg)
 	// 현재 시간 추가
 	CTime time = CTime::GetCurrentTime();
 	CString strTime = time.Format(_T("[%H:%M:%S] "));
-
+	CString strOutput = strTime + strMsg;
 	// ListBox에 문자열 추가 및 스크롤 이동
-	m_list_log.AddString(strTime + strMsg);
+	m_list_log.AddString(strOutput);
 	m_list_log.SetTopIndex(m_list_log.GetCount() - 1);
+
+
+	CSize size;
+	CDC* pDC = m_list_log.GetDC();
+
+	if (pDC)
+	{
+		// 폰트 설정 (정확한 계산을 위해 필요)
+		CFont* pFont = m_list_log.GetFont();
+		CFont* pOldFont = NULL;
+		if (pFont) pOldFont = pDC->SelectObject(pFont);
+
+
+		// [수정 1] GetTextExtent 호출 시, 리턴값을 size에 저장하고 길이를 명시합니다.
+		size = pDC->GetTextExtent(strOutput, strOutput.GetLength());
+
+		// 3. 스크롤바 최대 너비 계산
+		int nScrollWidth = size.cx + 10; // 여유분 10px 추가
+
+		// 4. 현재 ListBox에 설정된 수평 확장 너비를 가져옵니다.
+		int nCurrentExtent = m_list_log.SendMessage(LB_GETHORIZONTALEXTENT, 0, 0);
+
+		if (nScrollWidth > nCurrentExtent)
+		{
+			// 5. LB_SETHORIZONTALEXTENT 메시지를 사용하여 스크롤 너비를 설정합니다.
+			m_list_log.SendMessage(LB_SETHORIZONTALEXTENT, nScrollWidth, 0);
+		}
+
+		// 폰트 복구
+		if (pOldFont) pDC->SelectObject(pOldFont);
+
+		// 6. CWnd::ReleaseDC()를 호출하여 CDC를 해제합니다.
+		m_list_log.ReleaseDC(pDC);
+	}
 }
 void CServerDlg::DisplayMessage(const CString& strSender, const CString& strMsg, BOOL bReceived)
 {
@@ -603,7 +637,7 @@ void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender
 	// 2. 서버 로그 기록
 	CString strLog;
 	strLog.Format(_T("BROADCAST: %s"), strMsg);
-	AddLog(strLog);
+	//AddLog(strLog);
 
 	while (pos != NULL)
 	{
@@ -645,7 +679,7 @@ void CServerDlg::ResponseMessage(const CString& strMsg, CServiceSocket* pSender)
 		// 2. 서버 로그 기록
 		CString strLog;
 		strLog.Format(_T("RESPONSE: %s (To: %s)"), strMsg, pSender->m_strName);
-		AddLog(strLog);
+		//AddLog(strLog);
 
 		// 3. **[수정]** 길이 헤더 (4바이트)를 먼저 전송합니다.
 		int nHeaderSent = pSender->Send(&nLength, sizeof(nLength));
@@ -725,7 +759,7 @@ void CServerDlg::PlayGame() {
 		m_private_tile[1][i] = m_rand_tile_list[m_deck_pos];
 		CString strLog;
 		strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[1][i].color, m_private_tile[1][i].num, m_private_tile[1][i].tileId, 1, i);
-		AddLog(strLog);
+		//AddLog(strLog);
 		m_deck_pos++;
 	}
 	Backup();
@@ -832,7 +866,7 @@ void CServerDlg::Receive() {
 				m_private_tile[i][j] = m_rand_tile_list[m_deck_pos++];
 				CString strLog;
 				strLog.Format(_T("%d %d %d 타일이 %d %d 개인판에 들어감"), m_private_tile[i][j].color, m_private_tile[i][j].num, m_private_tile[i][j].tileId, i, j);
-				AddLog(strLog);
+				//AddLog(strLog);
 				received = true;
 				break;
 			}
@@ -2227,14 +2261,14 @@ void CServerDlg::InitControls() {
 	// [채팅/메시지 목록]
 	if (GetDlgItem(IDC_LIST_MESSAGE)) {
 		// [1000, 85] 위치, 250x200 크기
-		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 350));
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 150, 250, 300));
 	}
 
-	// [시스템 로그 목록]
-	//if (GetDlgItem(IDC_LIST_LOG)) {
-	//	// [1000, 295] 위치, 250x150 크기
-	//	GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 295, 250, 150));
-	//}
+	 //[시스템 로그 목록]
+	if (GetDlgItem(IDC_LIST_LOG)) {
+		// [1000, 295] 위치, 250x150 크기
+		GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 85, 250, 50));
+	}
 
 	// [채팅 입력창]
 	if (GetDlgItem(IDC_EDIT_SEND)) {

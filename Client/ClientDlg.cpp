@@ -1692,7 +1692,7 @@ void CClientDlg::InitControls() {
 
 	// [채팅 입력창]
 	if (GetDlgItem(IDC_EDIT_SEND)) {
-		// [1000, 455] 위치, 180x30 크기
+		// [1000, 455] 위치, 180x30 크기	
 		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(ScaleRect(1000, 455, 180, 30));
 	}
 	// [보내기 버튼]
