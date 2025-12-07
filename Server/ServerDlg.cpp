@@ -1497,12 +1497,6 @@ void CServerDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	if (m_clientSocketList.GetCount() > 0) // 게임 진행 중에 서버가 탈주한 경우
-	{
-		CString requestMsg;
-		requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
-		BroadcastMessage(requestMsg, 0);
-	}
 }
 
 // ServerDlg.cpp - OnLButtonDown 함수 전체 수정

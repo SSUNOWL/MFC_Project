@@ -1428,12 +1428,6 @@ void CClientDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
-	if (m_pClientSocket && m_pClientSocket->IsConnected()) // 서버와 소켓 연결이 되어 있는 경우
-	{
-		CString requestMsg;
-		requestMsg.Format(_T("type:EndGame|sender:%s|isNormalEnd:0"), m_strName);
-		RequestMessage(requestMsg);
-	}
 }
 //==================================================
 
