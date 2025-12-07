@@ -87,6 +87,7 @@ BOOL CClientDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 	InitTiles();
+	ClearBoards();
 	// 시스템 메뉴에 "정보..." 메뉴 항목을 추가합니다.
 
 	// IDM_ABOUTBOX는 시스템 명령 범위에 있어야 합니다.
@@ -1333,19 +1334,15 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		else
 			pTargetTile = &m_private_tile[nRow][nCol];
 
-		// 타일 데이터 Swap
-		Tile temp = *pTargetTile;
-		*pTargetTile = *pSourceTile;
-		*pSourceTile = temp;
-
-		// --- 서버 동기화 전송 ---
-
 		// 타일 이동 방향에 따른 m_nSubmitTileNum 증감
+		bool isSourceEmpty = (pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker);
+		bool isTargetEmpty = (pTargetTile->color == BLACK && pTargetTile->num == 0 && !pTargetTile->isJoker);
+
 		// 개인판 -> 공용판 이동 (타일 제출)
 		if (!m_bSelectedFromPublic && bClickedPublic)
 		{
 			// 빈 칸이 아닌 실제 타일을 제출하는 경우만 카운트
-			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			if (!isSourceEmpty && isTargetEmpty)
 			{
 				m_nSubmitTileNum++;
 			}
@@ -1354,11 +1351,19 @@ void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		else if (m_bSelectedFromPublic && !bClickedPublic)
 		{
 			// 빈 칸이 아닌 실제 타일을 회수하는 경우만 카운트
-			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			if (!isSourceEmpty && isTargetEmpty)
 			{
 				m_nSubmitTileNum--;
 			}
 		}
+
+		// 타일 데이터 Swap
+		Tile temp = *pTargetTile;
+		*pTargetTile = *pSourceTile;
+		*pSourceTile = temp;
+
+		// --- 서버 동기화 전송 ---
+
 
 		// 1. 원래 있던 위치(Source)가 공용판이었다면 업데이트 전송
 		if (m_bSelectedFromPublic)
