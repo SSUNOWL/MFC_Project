@@ -131,7 +131,42 @@ void CClientSocket::OnClose(int nErrorCode)
         CString strLog;
         strLog.Format(_T("INFO: 서버와의 연결이 끊어졌습니다. (에러코드: %d)"), nErrorCode);
         m_pClientDlg->m_static_status.SetWindowText(strLog);
+
+        CString tmpString;
+
+        if (!m_pClientDlg->m_bisGameStarted) { // 게임이 시작되지 않은 경우
+            // 소켓 연결이 있다면 종료
+            if (m_hSocket != INVALID_SOCKET)
+            {
+                ShutDown();
+                Close();
+            }
+
+            // IDC_LIST_PLAYER 내용 초기화
+            m_pClientDlg->m_listPlayer.DeleteAllItems();
+        }
+        else { // 게임이 진행 중이던 경우
+            // 게임 종료
+            m_pClientDlg->m_bisGameStarted = FALSE;
+
+            for (int i = 0; i < 3; i++) {
+                CString strTmpLog;
+                strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
+                m_pClientDlg->m_list_message.AddString(strTmpLog);
+                m_pClientDlg->m_list_message.SetTopIndex(m_pClientDlg->m_list_message.GetCount() - 1);
+                //m_pClientDlg->Invalidate(TRUE);
+                m_pClientDlg->UpdateWindow();
+
+                Sleep(1000);
+            }
+            if (m_pClientDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+            {
+                m_pClientDlg->PostMessage(WM_CLOSE);
+            }
+        }
     }
+
+
     CAsyncSocket::OnClose(nErrorCode);
 }
 
@@ -271,7 +306,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
 				isNormalEnd = _ttoi(tmpString);
             }
 
-            if (isNormalEnd == 0) { // 비정상적으로 종료된 경우
+            /*if (isNormalEnd == 0) { // 비정상적으로 종료된 경우
                 if (!m_pClientDlg->m_bisGameStarted) { // 게임이 시작되지 않은 경우
                     // 소켓 연결이 있다면 종료
                     if (m_hSocket != INVALID_SOCKET)
@@ -304,7 +339,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                         m_pClientDlg->PostMessage(WM_CLOSE);
                     }
                 }
-            }
+            }*/
             else if (isNormalEnd == 1) { //정상적으로 게임이 끝난 경우 (점수 결과 있음)
                 m_pClientDlg->m_bisGameStarted = FALSE;
                 m_pClientDlg->m_bCurrentTurn = false;
