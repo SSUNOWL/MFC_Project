@@ -401,5 +401,25 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             // 3. UI 상태 업데이트 (연결 끊김 처리)
             m_pClientDlg->m_static_status.SetWindowText(_T("서버 접속이 거부되었습니다."));
         }
+        else if (strType == _T("RemoveClient")) {
+            CString strID;
+            DWORD_PTR nID = 0;
+            if (messageMap.Lookup(_T("id"), strID)) {
+                nID = (DWORD_PTR)_ttoi64(strID);
+
+                int nCount = m_pClientDlg->m_listPlayer.GetItemCount();
+                for (int i = 0; i < nCount; i++)
+                {
+                    DWORD_PTR pItemSocket = m_pClientDlg->m_listPlayer.GetItemData(i);
+
+                    CString strPlayerName = m_pClientDlg->m_listPlayer.GetItemText(i, 0);
+                    if (pItemSocket == nID)
+                    {
+                        m_pClientDlg->m_listPlayer.DeleteItem(i);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
