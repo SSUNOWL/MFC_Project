@@ -478,6 +478,12 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 					break;
 				}
 			}
+			
+			//한명만 탈주한거 전부에게 최신화
+			CString strRemoveMsg;
+			strRemoveMsg.Format(_T("type:RemoveClient|id:%llu"), (unsigned long long)pServiceSocket);
+
+			BroadcastMessage(strRemoveMsg, 0);
 
 			Invalidate(TRUE);
 		}
