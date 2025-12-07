@@ -325,9 +325,41 @@ void CServerDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 	strOutput.Format(_T("[%s] %s"),strSender, strMsg);
 	
-
+		
 	m_list_message.AddString(strOutput);
 	m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+	CSize size;
+	CDC* pDC = m_list_message.GetDC();
+
+	if (pDC)
+	{
+		// 폰트 설정 (정확한 계산을 위해 필요)
+		CFont* pFont = m_list_message.GetFont();
+		CFont* pOldFont = NULL;
+		if (pFont) pOldFont = pDC->SelectObject(pFont);
+
+
+		// [수정 1] GetTextExtent 호출 시, 리턴값을 size에 저장하고 길이를 명시합니다.
+		size = pDC->GetTextExtent(strOutput, strOutput.GetLength());
+
+		// 3. 스크롤바 최대 너비 계산
+		int nScrollWidth = size.cx + 10; // 여유분 10px 추가
+
+		// 4. 현재 ListBox에 설정된 수평 확장 너비를 가져옵니다.
+		int nCurrentExtent = m_list_message.SendMessage(LB_GETHORIZONTALEXTENT, 0, 0);
+
+		if (nScrollWidth > nCurrentExtent)
+		{
+			// 5. LB_SETHORIZONTALEXTENT 메시지를 사용하여 스크롤 너비를 설정합니다.
+			m_list_message.SendMessage(LB_SETHORIZONTALEXTENT, nScrollWidth, 0);
+		}
+
+		// 폰트 복구
+		if (pOldFont) pDC->SelectObject(pOldFont);
+
+		// 6. CWnd::ReleaseDC()를 호출하여 CDC를 해제합니다.
+		m_list_message.ReleaseDC(pDC);
+	}
 }
 // 사용자가 최소화된 창을 끄는 동안에 커서가 표시되도록 시스템에서
 //  이 함수를 호출합니다.
@@ -2181,7 +2213,7 @@ void CServerDlg::InitControls() {
 	// [플레이어 목록]
 	if (GetDlgItem(IDC_LIST_PLAYER)) {
 		// [900, 555] 위치, 150x90 크기
-		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 150, 90));
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 90));
 	}
 
 
@@ -2198,14 +2230,14 @@ void CServerDlg::InitControls() {
 	// [채팅/메시지 목록]
 	if (GetDlgItem(IDC_LIST_MESSAGE)) {
 		// [1000, 85] 위치, 250x200 크기
-		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 200));
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 350));
 	}
 
 	// [시스템 로그 목록]
-	if (GetDlgItem(IDC_LIST_LOG)) {
-		// [1000, 295] 위치, 250x150 크기
-		GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 295, 250, 150));
-	}
+	//if (GetDlgItem(IDC_LIST_LOG)) {
+	//	// [1000, 295] 위치, 250x150 크기
+	//	GetDlgItem(IDC_LIST_LOG)->MoveWindow(ScaleRect(1000, 295, 250, 150));
+	//}
 
 	// [채팅 입력창]
 	if (GetDlgItem(IDC_EDIT_SEND)) {

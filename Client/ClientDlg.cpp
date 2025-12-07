@@ -129,6 +129,8 @@ BOOL CClientDlg::OnInitDialog()
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
 	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
 	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+	CRect rectWindow;
+	GetWindowRect(&rectWindow);
 	SetWindowPos(NULL, 0, 0, DESIGN_WIDTH, DESIGN_HEIGHT, SWP_NOMOVE | SWP_NOZORDER);
 
 	InitControls(); // InitControls는 크기 설정 후에 호출
@@ -296,6 +298,38 @@ void CClientDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 	m_list_message.AddString(strOutput);
 	m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+	CSize size;
+	CDC* pDC = m_list_message.GetDC();
+
+	if (pDC)
+	{
+		// 폰트 설정 (정확한 계산을 위해 필요)
+		CFont* pFont = m_list_message.GetFont();
+		CFont* pOldFont = NULL;
+		if (pFont) pOldFont = pDC->SelectObject(pFont);
+
+
+		// [수정 1] GetTextExtent 호출 시, 리턴값을 size에 저장하고 길이를 명시합니다.
+		size = pDC->GetTextExtent(strOutput, strOutput.GetLength());
+
+		// 3. 스크롤바 최대 너비 계산
+		int nScrollWidth = size.cx + 10; // 여유분 10px 추가
+
+		// 4. 현재 ListBox에 설정된 수평 확장 너비를 가져옵니다.
+		int nCurrentExtent = m_list_message.SendMessage(LB_GETHORIZONTALEXTENT, 0, 0);
+
+		if (nScrollWidth > nCurrentExtent)
+		{
+			// 5. LB_SETHORIZONTALEXTENT 메시지를 사용하여 스크롤 너비를 설정합니다.
+			m_list_message.SendMessage(LB_SETHORIZONTALEXTENT, nScrollWidth, 0);
+		}
+
+		// 폰트 복구
+		if (pOldFont) pDC->SelectObject(pOldFont);
+
+		// 6. CWnd::ReleaseDC()를 호출하여 CDC를 해제합니다.
+		m_list_message.ReleaseDC(pDC);
+	}
 }
 
 void CClientDlg::OnBnClickedButtonConnect()
@@ -1610,23 +1644,32 @@ void CClientDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
 }
 
 void CClientDlg::InitControls() {
-	if (GetDlgItem(IDC_BUTTON_RECEIVE)) {
-		GetDlgItem(IDC_BUTTON_RECEIVE)->MoveWindow(720, 555, 80, 40);
-	}
+	auto ScaleRect = [this](int x, int y, int w, int h) -> CRect {
+		CPoint ptTopLeft = GetScaledPoint(CPoint(x, y));
+		CPoint ptBottomRight = GetScaledPoint(CPoint(x + w, y + h));
+		return CRect(ptTopLeft, ptBottomRight);
+		};
+
 	// [PASS / 턴넘김] 버튼
 	if (GetDlgItem(IDC_BUTTON_PASS)) {
-		GetDlgItem(IDC_BUTTON_PASS)->MoveWindow(810, 555, 80, 40);
+		// [810, 555] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_PASS)->MoveWindow(ScaleRect(810, 555, 80, 40));
 	}
-	// [SET BACK / 되돌리기] 버튼
+	// [RECEIVE / 타일받기] 버튼
+	if (GetDlgItem(IDC_BUTTON_RECEIVE)) {
+		// [720, 605] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_RECEIVE)->MoveWindow(ScaleRect(720, 555, 80, 40));
+	}
+	// [SETBACK / 되돌리기] 버튼
 	if (GetDlgItem(IDC_BUTTON_SETBACK)) {
-		GetDlgItem(IDC_BUTTON_SETBACK)->MoveWindow(720, 605, 80, 40);
+		// [810, 605] 위치, 80x40 크기
+		GetDlgItem(IDC_BUTTON_SETBACK)->MoveWindow(ScaleRect(720, 605, 80, 40));
 	}
 
-	// [플레이어 목록] (버튼들 옆에 배치)
 	if (GetDlgItem(IDC_LIST_PLAYER)) {
-		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(900, 555, 150, 90);
+		// [900, 555] 위치, 150x90 크기
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 90));
 	}
-
 
 	// -------------------------------------------------------------
 	// 3. [오른쪽 상단] 공용판(width=980) 옆 빈 공간 (x > 1000)
@@ -1634,26 +1677,28 @@ void CClientDlg::InitControls() {
 
 	// [서버 연결] 버튼
 	if (GetDlgItem(IDC_BUTTON_CONNECT)) {
-		GetDlgItem(IDC_BUTTON_CONNECT)->MoveWindow(1000, 35, 100, 30);
+		GetDlgItem(IDC_BUTTON_CONNECT)->MoveWindow((ScaleRect(1000, 35, 100, 40)));
 	}
 
 	// [연결 상태 텍스트] (연결 버튼 옆)
 	if (GetDlgItem(IDD_STATIC_STATUS)) {
-		GetDlgItem(IDD_STATIC_STATUS)->MoveWindow(1110, 40, 150, 20);
+		GetDlgItem(IDD_STATIC_STATUS)->MoveWindow(1100, 40, 150, 20);
 	}
 
 	// [채팅/메시지 목록]
 	if (GetDlgItem(IDC_LIST_MESSAGE)) {
-		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(1000, 75, 260, 370);
+		GetDlgItem(IDC_LIST_MESSAGE)->MoveWindow(ScaleRect(1000, 85, 250, 350));
 	}
 
 	// [채팅 입력창]
 	if (GetDlgItem(IDC_EDIT_SEND)) {
-		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(1000, 455, 190, 30);
+		// [1000, 455] 위치, 180x30 크기
+		GetDlgItem(IDC_EDIT_SEND)->MoveWindow(ScaleRect(1000, 455, 180, 30));
 	}
 	// [보내기 버튼]
 	if (GetDlgItem(IDC_BUTTON_SEND)) {
-		GetDlgItem(IDC_BUTTON_SEND)->MoveWindow(1200, 455, 60, 30);
+		// [1190, 455] 위치, 60x30 크기
+		GetDlgItem(IDC_BUTTON_SEND)->MoveWindow(ScaleRect(1190, 455, 60, 30));
 	}
 }
 BOOL CClientDlg::PreTranslateMessage(MSG* pMsg)
