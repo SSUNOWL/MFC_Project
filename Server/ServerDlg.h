@@ -199,6 +199,7 @@ public:
 	int GetScaledSize(int designSize);
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	void ClearBoards();
 };
 
 

@@ -169,6 +169,7 @@ BOOL CServerDlg::OnInitDialog()
 	ShuffleTiles();
 	m_intPrivateTileNum = 0;
 	m_bFirstSubmit = true;
+	ClearBoards();
 
 	// [251127] 선택 상태 변수 초기화
 	m_bIsSelected = false;
@@ -1725,11 +1726,14 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 			: &m_private_tile[nRow][nCol];
 
 		// 타일 이동 방향에 따른 m_nSubmitTileNum 증감
+		bool isSourceEmpty = (pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker);
+		bool isTargetEmpty = (pTargetTile->color == BLACK && pTargetTile->num == 0 && !pTargetTile->isJoker);
+
 		// 개인판 -> 공용판 이동 (타일 제출)
 		if (!m_bSelectedFromPublic && bClickedPublic)
 		{
 			// 빈 칸이 아닌 실제 타일을 제출하는 경우만 카운트
-			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			if (!isSourceEmpty && isTargetEmpty)
 			{
 				m_nSubmitTileNum++;
 			}
@@ -1738,7 +1742,7 @@ void CServerDlg::OnLButtonDown(UINT nFlags, CPoint point)
 		else if (m_bSelectedFromPublic && !bClickedPublic)
 		{
 			// 빈 칸이 아닌 실제 타일을 회수하는 경우만 카운트
-			if (!(pSourceTile->color == BLACK && pSourceTile->num == 0 && !pSourceTile->isJoker))
+			if (!isSourceEmpty && isTargetEmpty)
 			{
 				m_nSubmitTileNum--;
 			}
@@ -2362,4 +2366,18 @@ int CServerDlg::GetScaledSize(int designSize)
 	// 펜 두께 등은 DPI 배율만 따르는 것이 일반적이므로 GetDPIScale을 사용합니다.
 	double dpiScale = GetDPIScale();
 	return (int)(designSize * dpiScale);
+}
+void CServerDlg::ClearBoards()
+{
+	const Tile empty = MakeEmpty();
+
+	// 공용판 (전체 0~끝까지 채우고, 실제 사용은 [1..13][1..27])
+	for (int r = 0; r < 14; ++r)
+		for (int c = 0; c < 28; ++c)
+			m_public_tile[r][c] = empty;
+
+	// 개인판 (전체 0~끝까지 채우고, 실제 사용은 [1..3][1..17])
+	for (int r = 0; r < 4; ++r)
+		for (int c = 0; c < 18; ++c)
+			m_private_tile[r][c] = empty;
 }
