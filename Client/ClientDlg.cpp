@@ -1679,7 +1679,7 @@ void CClientDlg::InitControls() {
 
 	if (GetDlgItem(IDC_LIST_PLAYER)) {
 		// [900, 555] 위치, 150x90 크기
-		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 90));
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 100));
 	}
 
 	// -------------------------------------------------------------
