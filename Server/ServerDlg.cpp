@@ -182,7 +182,7 @@ BOOL CServerDlg::OnInitDialog()
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
 	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
 	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-	InitControls();
+	//InitControls();
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -319,6 +319,19 @@ HCURSOR CServerDlg::OnQueryDragIcon()
 
 void CServerDlg::OnBnClickedButtonSend()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	CString strContent;
 	m_edit_send.GetWindowText(strContent);
 	
@@ -333,6 +346,19 @@ void CServerDlg::OnBnClickedButtonSend()
 
 void CServerDlg::OnBnClickedButtonStart()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 게임이 이미 진행 중입니다."));
@@ -436,6 +462,62 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 
 	if (pos != NULL)
 	{
+
+
+		if (!m_bisGameStarted) { // 아직 게임이 시작되지 않은 경우
+			// IDC_LIST_PLAYER에서 strSender 이름을 가진 항목 제거
+			int nCount = m_listPlayer.GetItemCount();
+			for (int i = 0; i < nCount; i++)
+			{	
+				CServiceSocket* pItemSocket = (CServiceSocket*)m_listPlayer.GetItemData(i);
+
+				CString strPlayerName = m_listPlayer.GetItemText(i, 0);
+				if (pItemSocket == pServiceSocket)
+				{
+					m_listPlayer.DeleteItem(i);
+					break;
+				}
+			}
+
+			Invalidate(TRUE);
+		}
+		else { // 게임이 진행 중이던 경우
+			// 게임 종료
+			m_bisGameStarted = false;
+
+			// 송신자를 제외한 모든 클라이언트에게 게임 종료 메시지 전송
+			CServiceSocket* pSender = NULL;
+			POSITION pos = m_clientSocketList.GetHeadPosition();
+			/*while (pos != NULL) {
+				CServiceSocket* pSocket = m_clientSocketList.GetNext(pos);
+				if (pSocket && (pSocket->m_strName == pServiceSocket->m_strName)) {
+					pSender = pSocket;
+				}
+			}*/
+
+			CString requestMsg;
+			requestMsg.Format(_T("type:EndGame|isNormalEnd:0"));
+			BroadcastMessage(requestMsg, 0);
+
+			for (int i = 0; i < 3; i++) {
+				CString strTmpLog;
+				strTmpLog.Format(_T("[INFO] 플레이어 탈주로 게임을 종료합니다. (%d초 이후 종료)"), (3 - i));
+				m_list_message.AddString(strTmpLog);
+				m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+				//m_pServerDlg->Invalidate(TRUE);
+				UpdateWindow();
+
+				Sleep(1000);
+			}
+
+			// 다이얼로그 닫기
+			PostMessage(WM_CLOSE);
+			if (GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+			{
+				PostMessage(WM_CLOSE);
+			}
+		}
+
 		// 2. 목록에서 제거
 		m_clientSocketList.RemoveAt(pos);
 
@@ -445,6 +527,8 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 		CString strLog;
 		strLog.Format(_T("INFO: 클라이언트 연결 해제됨 (현재 %d명)"), m_clientSocketList.GetCount());
 		AddLog(strLog);
+
+
 	}
 }
 void CServerDlg::BroadcastMessage(const CString& strMsg, CServiceSocket* pSender)
@@ -699,6 +783,19 @@ void CServerDlg::Receive() {
 }
 
 void CServerDlg::OnBnClickedButtonReceive() {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 게임이 시작되지 않았습니다."));
@@ -866,17 +963,26 @@ bool CServerDlg::IsRunValid(std::list<Tile> tileChunk)
 	// 연속된 숫자 검사
 	int expectedNum = -1;
 	bool firstTileSet = false;
+	bool isJokerFirst = false;
 
 	for (const Tile& t : tileChunk)
 	{
 		if (t.isJoker)
 		{
-			// 조커는 다음 숫자로 간주
-			if (expectedNum != -1)
+			if (expectedNum >= 14)
 			{
+				return false; // 조커가 13 오른쪽에 올 수 없음
+			}
+
+			if (expectedNum != -1) // 조커가 첫 번째 이후 타일인 경우
+			{
+				// 다음 숫자로 넘어감
 				expectedNum++;
 			}
-			// 첫 타일이 조커면 다음 일반 타일로 숫자 결정(그냥 패스하면 됨)
+			else // 조커가 첫 번째 타일인 경우
+			{
+				isJokerFirst = true;
+			}
 		}
 		else
 		{
@@ -890,6 +996,12 @@ bool CServerDlg::IsRunValid(std::list<Tile> tileChunk)
 			if (!firstTileSet)
 			{
 				expectedNum = t.num;
+
+				if ((expectedNum == 1) && isJokerFirst)
+				{
+					return false; // 조커가 1 왼쪽에 올 수 없음
+				}
+
 				firstTileSet = true;
 			}
 			else
@@ -1070,6 +1182,19 @@ int CServerDlg::CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun
 void CServerDlg::OnBnClickedButtonPass()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
@@ -1126,6 +1251,19 @@ void CServerDlg::OnBnClickedButtonPass()
 
 void CServerDlg::OnBnClickedButtonPlay()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (m_clientSocketList.GetCount() < 1) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 다른 플레이어를 기다려야합니다."));
@@ -1932,16 +2070,19 @@ void CServerDlg::HandleGameOver(CServiceSocket* pWinnerSocket)
 		result += line;
 	}
 
-	// 6) 서버에서 메시지 박스로 출력
-	AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
 
 	// 7) 클라이언트들에게도 결과 브로드캐스트
 	//    result 문자열에는 '|'만 안 쓰면 됨. (\r\n은 그대로 전송해도 무방)
+	// 메시지 순서변경 -> client에 알림창을 띄우고 자기 꺼 띄어야 해결됨
 	CString broadcast;
 	broadcast.Format(_T("type:EndGame|isNormalEnd:1|result:%s"),
 		result.GetString());
 
 	BroadcastMessage(broadcast, 0);
+
+	// 6) 서버에서 메시지 박스로 출력
+	AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
+
 }
 
 void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)

@@ -295,6 +295,19 @@ void CClientDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 void CClientDlg::OnBnClickedButtonConnect()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 이미 게임이 진행 중입니다."));
@@ -364,6 +377,19 @@ void CClientDlg::OnBnClickedButtonConnect()
 
 void CClientDlg::OnBnClickedButtonSend()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	// 1. 입력창에서 메시지 가져오기
 	CString strSend;
 	m_edit_send.GetWindowText(strSend);
@@ -592,17 +618,26 @@ bool CClientDlg::IsRunValid(std::list<Tile> tileChunk)
 	// 연속된 숫자 검사
 	int expectedNum = -1;
 	bool firstTileSet = false;
+	bool isJokerFirst = false;
 
 	for (const Tile& t : tileChunk)
 	{
 		if (t.isJoker)
 		{
-			// 조커는 다음 숫자로 간주
-			if (expectedNum != -1)
+			if (expectedNum >= 14)
 			{
+				return false; // 조커가 13 오른쪽에 올 수 없음
+			}
+
+			if (expectedNum != -1) // 조커가 첫 번째 이후 타일인 경우
+			{
+				// 다음 숫자로 넘어감
 				expectedNum++;
 			}
-			// 첫 타일이 조커면 다음 일반 타일로 숫자 결정(그냥 패스하면 됨)
+			else // 조커가 첫 번째 타일인 경우
+			{
+				isJokerFirst = true;
+			}
 		}
 		else
 		{
@@ -616,6 +651,12 @@ bool CClientDlg::IsRunValid(std::list<Tile> tileChunk)
 			if (!firstTileSet)
 			{
 				expectedNum = t.num;
+
+				if ((expectedNum == 1) && isJokerFirst)
+				{
+					return false; // 조커가 1 왼쪽에 올 수 없음
+				}
+
 				firstTileSet = true;
 			}
 			else
@@ -797,6 +838,19 @@ int CClientDlg::CalculateChunkValue(const std::list<Tile>& tileChunk, bool isRun
 
 void CClientDlg::OnBnClickedButtonPass()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
@@ -858,6 +912,20 @@ void CClientDlg::OnBnClickedButtonPass()
 
 void CClientDlg::OnBnClickedButtonReceive()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
+
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
@@ -1372,6 +1440,19 @@ void CClientDlg::OnDestroy()
 
 void CClientDlg::OnBnClickedButtonSetback()
 {
+	static ULONGLONG mLastClickTime = 0;
+
+	ULONGLONG currentTime = GetTickCount64(); // 현재 시스템 시간 (ms 단위)
+
+	// 마지막 클릭으로부터 1초(1000ms)가 지나지 않았으면 함수 종료
+	if (currentTime - mLastClickTime < 1000)
+	{
+		return; // 아무것도 안 하고 무시
+	}
+
+	// 시간 갱신
+
+	mLastClickTime = currentTime;
 	if (!m_bisGameStarted) {
 		CString strTmpLog;
 		strTmpLog.Format(_T("[INFO] 아직 게임이 시작되지 않았습니다."));
