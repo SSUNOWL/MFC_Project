@@ -129,7 +129,9 @@ BOOL CClientDlg::OnInitDialog()
 	m_listPlayer.InsertColumn(0, _T("이름"), LVCFMT_LEFT, 100);
 	m_listPlayer.InsertColumn(1, _T("TileNum"), LVCFMT_CENTER, 80);
 	m_listPlayer.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-	InitControls();
+	SetWindowPos(NULL, 0, 0, DESIGN_WIDTH, DESIGN_HEIGHT, SWP_NOMOVE | SWP_NOZORDER);
+
+	InitControls(); // InitControls는 크기 설정 후에 호출
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
 
@@ -202,75 +204,78 @@ void CClientDlg::OnPaint()
 	}
 	else
 	{
-
-
 		CPaintDC dc(this);
 
+		// 1. 그리드 그리기 (점선)
+		// ---------------------------------------------------------
 		CPen line_pen(PS_DOT, 1, RGB(80, 80, 80));
 		CPen* p_old_pen = dc.SelectObject(&line_pen);
+
 		int i = 0;
+		// [공용판] 가로줄
 		for (i = 1; i < 15; i++) {
-			dc.MoveTo(35, 35 * i);
-			dc.LineTo(980, 35 * i);
+			dc.MoveTo(GetScaledPoint(CPoint(35, 35 * i)));
+			dc.LineTo(GetScaledPoint(CPoint(980, 35 * i)));
 		}
+		// [공용판] 세로줄
 		for (i = 1; i < 29; i++) {
-			dc.MoveTo(35 * i, 35);
-			dc.LineTo(35 * i, 490);
+			dc.MoveTo(GetScaledPoint(CPoint(35 * i, 35)));
+			dc.LineTo(GetScaledPoint(CPoint(35 * i, 490)));
 		}
 		dc.SelectObject(p_old_pen);
 		line_pen.DeleteObject();
-		for (i = 0; i < 4; i++) {
-			dc.MoveTo(105, 555 + 35 * i);
-			dc.LineTo(700, 555 + 35 * i);
 
+		// [개인판] 가로줄
+		for (i = 0; i < 4; i++) {
+			dc.MoveTo(GetScaledPoint(CPoint(105, 555 + 35 * i)));
+			dc.LineTo(GetScaledPoint(CPoint(700, 555 + 35 * i)));
 		}
+		// [개인판] 세로줄
 		for (i = 0; i < 18; i++) {
-			dc.MoveTo(105 + 35 * i, 555);
-			dc.LineTo(105 + 35 * i, 555 + 35 * 3);
+			dc.MoveTo(GetScaledPoint(CPoint(105 + 35 * i, 555)));
+			dc.LineTo(GetScaledPoint(CPoint(105 + 35 * i, 555 + 35 * 3)));
 		}
 
 		DrawMyTiles(dc);
-
 
 		// [251127] 선택된 타일 빨간 테두리 표시
 		// ==========================================
 		if (m_bIsSelected)
 		{
-			// 빨간색 펜 생성 (두께 3)
-			CPen redPen(PS_SOLID, 3, RGB(255, 0, 0));
+			// 펜 두께 스케일링
+			int penWidth = GetScaledSize(3);
+			CPen redPen(PS_SOLID, penWidth, RGB(255, 0, 0));
 			CPen* pOldPen = dc.SelectObject(&redPen);
-
-			// 속은 비우기 (투명 브러시)
 			CBrush* pOldBrush = (CBrush*)dc.SelectStockObject(NULL_BRUSH);
 
-			int startX = 0, startY = 0;
+			int designStartX = 0, designStartY = 0;
+			const int TILE_SIZE_DESIGN = 35;
 
-			// 좌표 계산 (DrawMyTiles의 좌표 로직과 동일해야 함)
-			if (m_bSelectedFromPublic)
-			{
-				// 공용판: (35, 35) 시작
-				startX = 35 + (m_nSelectedCol - 1) * 35;
-				startY = 35 + (m_nSelectedRow - 1) * 35;
+			// 디자인 좌표 계산
+			if (m_bSelectedFromPublic) {
+				designStartX = 35 + (m_nSelectedCol - 1) * TILE_SIZE_DESIGN;
+				designStartY = 35 + (m_nSelectedRow - 1) * TILE_SIZE_DESIGN;
 			}
-			else
-			{
-				// 개인판: (105, 555) 시작
-				startX = 105 + (m_nSelectedCol - 1) * 35;
-				startY = 555 + (m_nSelectedRow - 1) * 35;
+			else {
+				designStartX = 105 + (m_nSelectedCol - 1) * TILE_SIZE_DESIGN;
+				designStartY = 555 + (m_nSelectedRow - 1) * TILE_SIZE_DESIGN;
 			}
 
-			// 테두리 그리기 (셀 크기 35x35)
-			dc.Rectangle(startX, startY, startX + 35, startY + 35);
+			// 실제 화면 좌표로 변환 및 그리기
+			CPoint ptTopLeft = GetScaledPoint(CPoint(designStartX, designStartY));
+			CPoint ptBottomRight = GetScaledPoint(CPoint(designStartX + TILE_SIZE_DESIGN, designStartY + TILE_SIZE_DESIGN));
 
-			// 리소스 복구
+			dc.Rectangle(CRect(ptTopLeft, ptBottomRight));
+
 			dc.SelectObject(pOldPen);
 			dc.SelectObject(pOldBrush);
 		}
 
-		CDialogEx::OnPaint();
-
-
+		// [수정] CDialogEx::OnPaint()는 제거 또는 주석 처리 (겹침 방지)
+		 CDialogEx::OnPaint();
 	}
+
+	
 	
 }
 
@@ -1060,16 +1065,20 @@ int CClientDlg::GetTileImageIndex(const Tile& tile) const
 	return base + numIndex;   // 첫 번째 세트만 사용 (0~90 범위)
 }
 
+// CClientDlg::DrawMyTiles() 수정
 void CClientDlg::DrawMyTiles(CDC& dc)
 {
-	// 공통 상수
+	// [수정] 모든 상수를 디자인 기준으로 고정
 	const int CELL_SIZE = 35;
 	const int TILE_DRAW_SIZE = 32;
-	const int OFFSET = (CELL_SIZE - TILE_DRAW_SIZE) / 2 + 1;
+	const int OFFSET_DESIGN = 1; // (35 - 32) / 2 + 1 = 2
 
-	// 실제 타일 내용 영역 크기 (여백 제외하고 쓰고 싶은 크기)
+	// 실제 타일 내용 영역 크기 (원본 이미지 크기이므로 스케일링하지 않음)
 	const int CONTENT_W = 68;
 	const int CONTENT_H = 68;
+
+	// [수정] 그릴 크기(32)만 스케일링
+	const int DRAW_SIZE_S = GetScaledSize(TILE_DRAW_SIZE);
 
 	// === 공용판 그리기 ===
 	const int PUBLIC_START_X = 35;
@@ -1080,33 +1089,32 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 		for (int col = 1; col <= 27; ++col)
 		{
 			const Tile& t = m_public_tile[row][col];
-
-			// 빈 타일 스킵 (BLACK, 0, false 기준)
-			if (t.color == BLACK && t.num == 0 && !t.isJoker)
-				continue;
+			if (t.color == BLACK && t.num == 0 && !t.isJoker) continue;
 
 			int imgIndex = GetTileImageIndex(t);
-			if (imgIndex < 0) continue;
-			if (m_tile_image_list[imgIndex].IsNull()) continue;
+			if (imgIndex < 0 || m_tile_image_list[imgIndex].IsNull()) continue;
 
-			// 원본 이미지 크기
+			// ... (원본 이미지 자르기 로직 생략) ...
 			int imgW = m_tile_image_list[imgIndex].GetWidth();
 			int imgH = m_tile_image_list[imgIndex].GetHeight();
-
-			// 원본 중앙에서 68x68만 잘라오기
 			int srcW = min(CONTENT_W, imgW);
 			int srcH = min(CONTENT_H, imgH);
 			int srcX = max(0, (imgW - srcW) / 2 - 1);
 			int srcY = max(0, (imgH - srcH) / 2 - 1);
 
-			int drawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET;
-			int drawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+			// [수정] 최종 그릴 위치를 디자인 좌표계에서 계산
+			int designDrawX = PUBLIC_START_X + (col - 1) * CELL_SIZE + OFFSET_DESIGN;
+			int designDrawY = PUBLIC_START_Y + (row - 1) * CELL_SIZE + OFFSET_DESIGN;
 
-			// 잘라낸 영역(srcX,srcY,srcW,srcH)을 30x30으로 축소해서 셀 안에 그림
+			// 최종 디자인 좌표를 스케일링
+			CPoint ptDraw = GetScaledPoint(CPoint(designDrawX, designDrawY));
+			int drawX = ptDraw.x;
+			int drawY = ptDraw.y;
+
 			m_tile_image_list[imgIndex].Draw(
 				dc,
-				drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,  // 목적지(보드) 영역
-				srcX, srcY, srcW, srcH            // 원본에서 자를 영역
+				drawX, drawY, DRAW_SIZE_S, DRAW_SIZE_S,  // 목적지 영역: 위치(스케일), 크기(스케일)
+				srcX, srcY, srcW, srcH
 			);
 		}
 	}
@@ -1120,29 +1128,28 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 		for (int col = 1; col <= 17; ++col)
 		{
 			const Tile& t = m_private_tile[row][col];
-
-			// 빈 타일 스킵
-			if (t.color == BLACK && t.num == 0 && !t.isJoker)
-				continue;
-
+			if (t.color == BLACK && t.num == 0 && !t.isJoker) continue;
+			// ... (이미지 체크 및 자르기 로직 생략) ...
 			int imgIndex = GetTileImageIndex(t);
-			if (imgIndex < 0) continue;
-			if (m_tile_image_list[imgIndex].IsNull()) continue;
-
+			if (imgIndex < 0 || m_tile_image_list[imgIndex].IsNull()) continue;
 			int imgW = m_tile_image_list[imgIndex].GetWidth();
 			int imgH = m_tile_image_list[imgIndex].GetHeight();
-
 			int srcW = min(CONTENT_W, imgW);
 			int srcH = min(CONTENT_H, imgH);
 			int srcX = max(0, (imgW - srcW) / 2);
 			int srcY = max(0, (imgH - srcH) / 2);
 
-			int drawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET;
-			int drawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET;
+			// [수정] 최종 그릴 위치를 디자인 좌표계에서 계산
+			int designDrawX = PRIVATE_START_X + (col - 1) * CELL_SIZE + OFFSET_DESIGN;
+			int designDrawY = PRIVATE_START_Y + (row - 1) * CELL_SIZE + OFFSET_DESIGN;
+
+			CPoint ptDraw = GetScaledPoint(CPoint(designDrawX, designDrawY));
+			int drawX = ptDraw.x;
+			int drawY = ptDraw.y;
 
 			m_tile_image_list[imgIndex].Draw(
 				dc,
-				drawX, drawY, TILE_DRAW_SIZE, TILE_DRAW_SIZE,
+				drawX, drawY, DRAW_SIZE_S, DRAW_SIZE_S,
 				srcX, srcY, srcW, srcH
 			);
 		}
@@ -1152,35 +1159,35 @@ void CClientDlg::DrawMyTiles(CDC& dc)
 //[251127] 추가
 void CClientDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	// 1. 클릭된 위치가 공용판인지 개인판인지 확인
+	CPoint ptLogic = ScreenToDesign(point);
+
 	bool bClickedPublic = false;
 	bool bClickedPrivate = false;
 	int nRow = -1, nCol = -1;
+	const int TILE_SIZE_DESIGN = 35; // 타일 셀 크기 (디자인 기준)
 
-	// 공용판 범위 체크
-	if (point.x >= 35 && point.x < 35 + 27 * 35 &&
-		point.y >= 35 && point.y < 35 + 13 * 35)
+	// 공용판 범위 (ptLogic 사용)
+	if (ptLogic.x >= 35 && ptLogic.x < 35 + 27 * TILE_SIZE_DESIGN &&
+		ptLogic.y >= 35 && ptLogic.y < 35 + 13 * TILE_SIZE_DESIGN)
 	{
 		bClickedPublic = true;
-		nCol = (point.x - 35) / 35 + 1;
-		nRow = (point.y - 35) / 35 + 1;
+		nCol = (ptLogic.x - 35) / TILE_SIZE_DESIGN + 1;
+		nRow = (ptLogic.y - 35) / TILE_SIZE_DESIGN + 1;
 	}
-	// 개인판 범위 체크
-	else if (point.x >= 105 && point.x < 105 + 17 * 35 &&
-		point.y >= 555 && point.y < 555 + 3 * 35)
+	// 개인판 범위 (ptLogic 사용)
+	else if (ptLogic.x >= 105 && ptLogic.x < 105 + 17 * TILE_SIZE_DESIGN &&
+		ptLogic.y >= 555 && ptLogic.y < 555 + 3 * TILE_SIZE_DESIGN)
 	{
 		bClickedPrivate = true;
-		nCol = (point.x - 105) / 35 + 1;
-		nRow = (point.y - 555) / 35 + 1;
+		nCol = (ptLogic.x - 105) / TILE_SIZE_DESIGN + 1;
+		nRow = (ptLogic.y - 555) / TILE_SIZE_DESIGN + 1;
 	}
 	else
 	{
-		// 판 바깥 클릭 -> 선택 해제
 		if (m_bIsSelected) {
-			m_bIsSelected = false;
-			Invalidate(TRUE);
+			m_bIsSelected = false; Invalidate(TRUE);
 		}
-		CDialogEx::OnLButtonDown(nFlags, point);
+		CDialogEx::OnLButtonDown(nFlags, point); // 부모 클래스에는 원본 좌표 전달
 		return;
 	}
 
@@ -1661,4 +1668,58 @@ BOOL CClientDlg::PreTranslateMessage(MSG* pMsg)
 	}
 
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+
+double CClientDlg::GetDPIScale()
+{
+	CClientDC dc(this);
+	int currentDPI = dc.GetDeviceCaps(LOGPIXELSX);
+	return (double)currentDPI / 96.0;
+}
+
+// 2. 현재 창 크기 대비 가로/세로 비율 (해상도 스케일링)
+double CClientDlg::GetScaleX()
+{
+	CRect rectClient;
+	GetClientRect(&rectClient);
+	return (double)rectClient.Width() / DESIGN_WIDTH;
+}
+
+double CClientDlg::GetScaleY()
+{
+	CRect rectClient;
+	GetClientRect(&rectClient);
+	return (double)rectClient.Height() / DESIGN_HEIGHT;
+}
+
+// 3. 그리기용: 디자인 좌표 -> 화면 좌표 (곱하기)
+CPoint CClientDlg::GetScaledPoint(CPoint designPt)
+{
+	CPoint finalPt;
+	finalPt.x = (long)(designPt.x * GetScaleX());
+	finalPt.y = (long)(designPt.y * GetScaleY());
+	return finalPt;
+}
+
+// 4. 클릭용: 화면 좌표 -> 디자인 좌표 (나누기)
+CPoint CClientDlg::ScreenToDesign(CPoint screenPt)
+{
+	CPoint logicPt;
+	double scaleX = GetScaleX();
+	double scaleY = GetScaleY();
+
+	if (scaleX == 0) scaleX = 1;
+	if (scaleY == 0) scaleY = 1;
+
+	logicPt.x = (long)(screenPt.x / scaleX);
+	logicPt.y = (long)(screenPt.y / scaleY);
+	return logicPt;
+}
+
+// 5. 크기용: DPI 배율만 고려하여 크기 반환
+int CClientDlg::GetScaledSize(int designSize)
+{
+	double dpiScale = GetDPIScale();
+	return (int)(designSize * dpiScale);
 }

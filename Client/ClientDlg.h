@@ -6,7 +6,8 @@
 #include "ClientSocket.h"
 #include <vector>
 #include <list>
-
+#define DESIGN_WIDTH  1280
+#define DESIGN_HEIGHT 720
 
 enum Color {
 	RED,
@@ -131,4 +132,12 @@ public:
 	void InitControls();
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+
+	double GetDPIScale();
+	CPoint GetScaledPoint(CPoint designPt);
+	CPoint ScreenToDesign(CPoint screenPt);
+	double GetScaleX();
+	double GetScaleY();
+	int GetScaledSize(int designSize);
+
 };
