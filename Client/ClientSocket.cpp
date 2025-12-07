@@ -305,13 +305,21 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
 				isNormalEnd = _ttoi(tmpString);
             }
 
-            else if (isNormalEnd == 1) { //정상적으로 게임이 끝난 경우 (점수 결과 있음)
+            if (isNormalEnd == 1) { //정상적으로 게임이 끝난 경우 (점수 결과 있음)
                 m_pClientDlg->m_bisGameStarted = FALSE;
                 m_pClientDlg->m_bCurrentTurn = false;
 
                 CString result;
                 if (messageMap.Lookup(_T("result"), result)) {
                     AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
+                }
+
+
+                // 다이얼로그 닫기
+                m_pClientDlg->PostMessage(WM_CLOSE);
+                if (m_pClientDlg->GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+                {
+                    m_pClientDlg->PostMessage(WM_CLOSE);
                 }
             }
         }

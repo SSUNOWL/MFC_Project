@@ -2183,6 +2183,15 @@ void CServerDlg::HandleGameOver(CServiceSocket* pWinnerSocket)
 	// 6) 서버에서 메시지 박스로 출력
 	AfxMessageBox(result, MB_OK | MB_ICONINFORMATION);
 
+
+	// 다이얼로그 닫기
+	PostMessage(WM_CLOSE);
+	if (GetSafeHwnd())  // NULL이 아니면 윈도우가 아직 존재
+	{
+		PostMessage(WM_CLOSE);
+	}
+
+	
 }
 
 void CServerDlg::OnNMCustomdrawListPlayer(NMHDR* pNMHDR, LRESULT* pResult)
