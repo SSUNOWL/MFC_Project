@@ -141,7 +141,6 @@ void CClientSocket::OnClose(int nErrorCode)
                 ShutDown();
                 Close();
             }
-
             // IDC_LIST_PLAYER 내용 초기화
             m_pClientDlg->m_listPlayer.DeleteAllItems();
         }
@@ -353,7 +352,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pClientDlg->m_pTurn = nID;
 
             CString strContent;
-            strContent.Format(_T("%s의 턴이 시작되었습니다 %lld"), strName, nID);
+            strContent.Format(_T("%s의 턴이 시작되었습니다."), strName);
 
             m_pClientDlg->DisplayMessage(strName, strContent, TRUE);
 
@@ -368,7 +367,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pClientDlg->m_static_status.SetWindowText(_T("서버 접속이 거부되었습니다."));
         }
         else if (strType == _T("RemoveClient")) {
-            CString strID;
+            CString strID,strName;
             DWORD_PTR nID = 0;
             if (messageMap.Lookup(_T("id"), strID)) {
                 nID = (DWORD_PTR)_ttoi64(strID);
@@ -385,6 +384,9 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
                         break;
                     }
                 }
+            }
+            if (messageMap.Lookup(_T("Name"), strName)) {
+                m_pClientDlg->DisplayMessage(strName,_T("님이 퇴장했습니다."),TRUE);
             }
         }
     }

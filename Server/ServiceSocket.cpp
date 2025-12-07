@@ -343,7 +343,6 @@ void CServiceSocket::ProcessExtractedMessage(const std::string& utf8_data)
             );
 
             m_pServerDlg->BroadcastMessage(strMsg, 0);
-}
-
+        }
     }
 }

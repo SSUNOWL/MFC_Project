@@ -546,7 +546,7 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 {
 	// 1. 목록에서 해당 포인터를 찾습니다.
 	POSITION pos = m_clientSocketList.Find(pServiceSocket);
-
+	CString strPlayerName;
 	if (pos != NULL)
 	{
 
@@ -558,7 +558,7 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 			{	
 				CServiceSocket* pItemSocket = (CServiceSocket*)m_listPlayer.GetItemData(i);
 
-				CString strPlayerName = m_listPlayer.GetItemText(i, 0);
+				strPlayerName = m_listPlayer.GetItemText(i, 0);
 				if (pItemSocket == pServiceSocket)
 				{
 					m_listPlayer.DeleteItem(i);
@@ -568,9 +568,12 @@ void CServerDlg::RemoveClient(CServiceSocket* pServiceSocket)
 			
 			//한명만 탈주한거 전부에게 최신화
 			CString strRemoveMsg;
-			strRemoveMsg.Format(_T("type:RemoveClient|id:%llu"), (unsigned long long)pServiceSocket);
+			strRemoveMsg.Format(_T("type:RemoveClient|id:%llu|Name:%s"), (unsigned long long)pServiceSocket,strPlayerName);
 
 			BroadcastMessage(strRemoveMsg, 0);
+
+			CString strMsg = _T("님이 퇴장했습니다.");
+			DisplayMessage(strPlayerName ,strMsg , TRUE);
 
 			Invalidate(TRUE);
 		}
