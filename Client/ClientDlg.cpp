@@ -296,6 +296,38 @@ void CClientDlg::DisplayMessage(const CString& strSender, const CString& strMsg,
 
 	m_list_message.AddString(strOutput);
 	m_list_message.SetTopIndex(m_list_message.GetCount() - 1);
+	CSize size;
+	CDC* pDC = m_list_message.GetDC();
+
+	if (pDC)
+	{
+		// 폰트 설정 (정확한 계산을 위해 필요)
+		CFont* pFont = m_list_message.GetFont();
+		CFont* pOldFont = NULL;
+		if (pFont) pOldFont = pDC->SelectObject(pFont);
+
+
+		// [수정 1] GetTextExtent 호출 시, 리턴값을 size에 저장하고 길이를 명시합니다.
+		size = pDC->GetTextExtent(strOutput, strOutput.GetLength());
+
+		// 3. 스크롤바 최대 너비 계산
+		int nScrollWidth = size.cx + 10; // 여유분 10px 추가
+
+		// 4. 현재 ListBox에 설정된 수평 확장 너비를 가져옵니다.
+		int nCurrentExtent = m_list_message.SendMessage(LB_GETHORIZONTALEXTENT, 0, 0);
+
+		if (nScrollWidth > nCurrentExtent)
+		{
+			// 5. LB_SETHORIZONTALEXTENT 메시지를 사용하여 스크롤 너비를 설정합니다.
+			m_list_message.SendMessage(LB_SETHORIZONTALEXTENT, nScrollWidth, 0);
+		}
+
+		// 폰트 복구
+		if (pOldFont) pDC->SelectObject(pOldFont);
+
+		// 6. CWnd::ReleaseDC()를 호출하여 CDC를 해제합니다.
+		m_list_message.ReleaseDC(pDC);
+	}
 }
 
 void CClientDlg::OnBnClickedButtonConnect()
