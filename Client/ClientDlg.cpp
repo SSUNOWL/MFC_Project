@@ -618,17 +618,26 @@ bool CClientDlg::IsRunValid(std::list<Tile> tileChunk)
 	// 연속된 숫자 검사
 	int expectedNum = -1;
 	bool firstTileSet = false;
+	bool isJokerFirst = false;
 
 	for (const Tile& t : tileChunk)
 	{
 		if (t.isJoker)
 		{
-			// 조커는 다음 숫자로 간주
-			if (expectedNum != -1)
+			if (expectedNum >= 14)
 			{
+				return false; // 조커가 13 오른쪽에 올 수 없음
+			}
+
+			if (expectedNum != -1) // 조커가 첫 번째 이후 타일인 경우
+			{
+				// 다음 숫자로 넘어감
 				expectedNum++;
 			}
-			// 첫 타일이 조커면 다음 일반 타일로 숫자 결정(그냥 패스하면 됨)
+			else // 조커가 첫 번째 타일인 경우
+			{
+				isJokerFirst = true;
+			}
 		}
 		else
 		{
@@ -642,6 +651,12 @@ bool CClientDlg::IsRunValid(std::list<Tile> tileChunk)
 			if (!firstTileSet)
 			{
 				expectedNum = t.num;
+
+				if ((expectedNum == 1) && isJokerFirst)
+				{
+					return false; // 조커가 1 왼쪽에 올 수 없음
+				}
+
 				firstTileSet = true;
 			}
 			else
