@@ -141,7 +141,9 @@ void CClientSocket::OnClose(int nErrorCode)
                 ShutDown();
                 Close();
             }
-
+            CString strOut;
+            strOut.Format(_T("%s님이 퇴장하셨습니다."), m_pClientDlg->m_strName);
+            m_pClientDlg->DisplayMessage(_T("시스템"), strOut, 1);
             // IDC_LIST_PLAYER 내용 초기화
             m_pClientDlg->m_listPlayer.DeleteAllItems();
         }
@@ -353,7 +355,7 @@ void CClientSocket::ProcessExtractedMessage(const std::string& utf8_data)
             m_pClientDlg->m_pTurn = nID;
 
             CString strContent;
-            strContent.Format(_T("%s의 턴이 시작되었습니다 %lld"), strName, nID);
+            strContent.Format(_T("%s의 턴이 시작되었습니다."), strName);
 
             m_pClientDlg->DisplayMessage(strName, strContent, TRUE);
 
