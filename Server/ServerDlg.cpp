@@ -422,7 +422,8 @@ void CServerDlg::OnBnClickedButtonSend()
 	mLastClickTime = currentTime;
 	CString strContent;
 	m_edit_send.GetWindowText(strContent);
-	
+	strContent.Replace(_T("|"), _T(""));
+
 	CString strType = _T("CHAT");
 	CString strMsg;
 	strMsg.Format(_T("type:%s|sender:%s|content:%s"), strType, m_strName, strContent);
@@ -798,7 +799,7 @@ void CServerDlg::PlayGame() {
 		BroadcastMessage(strUpdateTilenum, 0);
 
 
-	}
+	}	
 	//개인 타일판을 시각화하는 함수
 
 
@@ -1981,7 +1982,7 @@ void CServerDlg::AddPlayerToList(CString strName, int nTileCount, CServiceSocket
 	strCount.Format(_T("%d"), nTileCount);
 	m_listPlayer.SetItemText(nIndex, 1, strCount);
 
-	// [핵심] 리스트 아이템의 데이터 공간에 소켓 포인터 주소를 저장
+	// 리스트 아이템의 데이터 공간에 소켓 포인터 주소를 저장
 	// 서버 본인인 경우 pSocket이 nullptr로 들어옴
 	m_listPlayer.SetItemData(nIndex, (DWORD_PTR)pSocket);
 }
@@ -2280,7 +2281,7 @@ void CServerDlg::InitControls() {
 	// [플레이어 목록]
 	if (GetDlgItem(IDC_LIST_PLAYER)) {
 		// [900, 555] 위치, 150x90 크기
-		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 90));
+		GetDlgItem(IDC_LIST_PLAYER)->MoveWindow(ScaleRect(900, 555, 250, 100));
 	}
 
 

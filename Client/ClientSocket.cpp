@@ -49,11 +49,17 @@ void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
         int nColonPos = strToken.Find(_T(':'));
         if (nColonPos != -1)
         {
+
             CString strKey = strToken.Left(nColonPos);
             CString strValue = strToken.Mid(nColonPos + 1);
 
             //  매개변수로 받은 mapResult에 삽입
-            mapResult[strKey] = strValue;
+            CString strExistingValue;
+            if (!mapResult.Lookup(strKey, strExistingValue))
+            {
+                // 맵에 키가 없을 때만 삽입
+                mapResult[strKey] = strValue;
+            }
         }
         strToken = strMessage.Tokenize(_T("|"), nPos);
     }

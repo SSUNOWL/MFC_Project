@@ -436,6 +436,7 @@ void CClientDlg::OnBnClickedButtonSend()
 
 	if (strSend.IsEmpty()) return;
 	
+	strSend.Replace(_T("|"), _T(""));
 	CString strMsg;
 	strMsg.Format(_T("type:CHAT|sender:%s|content:%s"), m_strName, strSend);
 	RequestMessage(strMsg);

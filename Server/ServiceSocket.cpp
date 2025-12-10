@@ -32,7 +32,6 @@ void CServiceSocket::OnClose(int nErrorCode)
 typedef CMap<CString, LPCTSTR, CString, LPCTSTR> CStringToStringMap;
 void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
 {
-    
     CString strToken;
     int nPos = 0;
 
@@ -49,12 +48,18 @@ void ParseMessageToMap(const CString& strMessage, CStringToStringMap& mapResult)
             CString strKey = strToken.Left(nColonPos);
             CString strValue = strToken.Mid(nColonPos + 1);
 
-            //  매개변수로 받은 mapResult에 삽입
-            mapResult[strKey] = strValue;
+            // [보안 수정] 키 중복 검사: 이미 존재하는 키라면 덮어쓰지 않고 무시합니다.
+            // 이렇게 하면 채팅 내용(content) 뒤에 type:... 이 오더라도 
+            // 맨 처음 나온 type(진짜 헤더)이 유지됩니다.
+            CString strExistingValue;
+            if (!mapResult.Lookup(strKey, strExistingValue))
+            {
+                // 맵에 키가 없을 때만 삽입
+                mapResult[strKey] = strValue;
+            }
         }
         strToken = strMessage.Tokenize(_T("|"), nPos);
     }
-    
 }
 void CServiceSocket::OnReceive(int nErrorCode)
 {
