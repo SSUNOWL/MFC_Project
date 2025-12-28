@@ -7,11 +7,12 @@
 > C++ MFC 기반 제작
 >
 ## 🚀 시작하기 (Getting Started)
+게임의 서버와 클라이언트가 각각의 파일을 위에서 다운받습니다.
 
 ### 저장소 클론 (Repository Clone)
-아래 명령어를 통해 프로젝트 소스코드를 로컬 환경으로 가져옵니다.
+아래 명령어를 통해 게임 exe 파일을 로컬 환경으로 가져옵니다.
 ```bash
-git clone [https://github.com/SSUNOWL/MFC_Project.git](https://github.com/SSUNOWL/MFC_Project.git)
+git clone -b Game https://github.com/SSUNOWL/MFC_Rummikub.git
 ```
 
 
