@@ -8,8 +8,8 @@
 >
 ## 🚀 시작하기 (Getting Started)
 
-### 1. 저장소 클론 (Repository Clone)
-아래 명령어를 통해 프로젝트 소스코드를 로컬 환경으로 가져옵니다[cite: 1773].
+### 저장소 클론 (Repository Clone)
+아래 명령어를 통해 프로젝트 소스코드를 로컬 환경으로 가져옵니다.
 ```bash
 git clone [https://github.com/SSUNOWL/MFC_Project.git](https://github.com/SSUNOWL/MFC_Project.git)
 ```
@@ -19,9 +19,22 @@ git clone [https://github.com/SSUNOWL/MFC_Project.git](https://github.com/SSUNOW
 
 <img width="1243" height="683" alt="image" src="https://github.com/user-attachments/assets/9e83f7bb-bdb5-4872-b784-bd13f60dcf80" />
 
+### 서버와 클라이언트의 IP를 연동해서 게임을 플레이하세요!
+> 
+<img width="502" height="225" alt="image" src="https://github.com/user-attachments/assets/273f3bfd-960c-4c77-8ed7-d2c6723cee65" />
+
+> 동일 네트워크내에 있어야 진행할 수 있습니다.
+>
+> 서버가 IP를 입력하여 방을 파면 클라이언트에서 동일 IP를 입력해서 입장하세요
+>
+> https://www.vpn.net/
+>
+> Logmein Hamachi를 통해 원격 접속이 가능합니다.
+> 
+
 ## 👥 팀원 및 역할 (Team JOKER)
 
-본 프로젝트는 기능 단위의 모듈화 개발을 통해 협업을 진행하였습니다. [cite: 250]
+본 프로젝트는 기능 단위의 모듈화 개발을 통해 협업을 진행하였습니다.
 
 | 이름 | 역할 | 상세 구현 내용 |
 | :--- | :--- | :--- |
@@ -35,20 +48,20 @@ git clone [https://github.com/SSUNOWL/MFC_Project.git](https://github.com/SSUNOW
 ## ✨ 주요 기능 (Key Features)
 
 ### 1. 실시간 멀티플레이 시스템 (Network)
-* **비동기 소켓 통신**: `CAsyncSocket`을 상속받은 `CListenSocket`과 `CServiceSocket`을 통해 최대 4인의 멀티플레이를 지원합니다 [cite: 214, 361-362, 1993].
-* **안정적인 메시지 프로토콜**: TCP 스트림의 메시지 쪼개짐 현상을 방지하기 위해 `4바이트 헤더(길이) + UTF-8 페이로드` 구조를 적용했습니다[cite: 390, 437, 2012].
-* **중앙 관리형 서버**: 모든 게임 상태(덱, 공용판)는 서버가 권위를 가지며, 클라이언트에 실시간으로 브로드캐스트하여 동기화합니다[cite: 255, 360, 2001].
+* **비동기 소켓 통신**: `CAsyncSocket`을 상속받은 `CListenSocket`과 `CServiceSocket`을 통해 최대 4인의 멀티플레이를 지원합니다.
+* **안정적인 메시지 프로토콜**: TCP 스트림의 메시지 쪼개짐 현상을 방지하기 위해 `4바이트 헤더(길이) + UTF-8 페이로드` 구조를 적용했습니다.
+* **중앙 관리형 서버**: 모든 게임 상태(덱, 공용판)는 서버가 권위를 가지며, 클라이언트에 실시간으로 브로드캐스트하여 동기화합니다.
 
 ### 2. 완벽한 게임 규칙 구현 (Game Logic)
-* **엄격한 조합 검사**: 루미큐브의 핵심인 **런(Run)**과 **그룹(Group)** 규칙을 청크(Chunk) 단위로 파싱하여 검증합니다 [cite: 61-66, 1256, 2128].
-* **첫 등록 30점 규칙**: 첫 번째 타일 제출 시 숫자 합이 30 이상이어야 하는 규칙을 강제합니다[cite: 71, 1235, 1245].
-* **조커 타일 처리**: 모든 색상과 숫자를 대체할 수 있는 조커의 특성을 반영하고, 배치 위치에 따른 예외 처리를 완료했습니다[cite: 53, 1308, 1391].
-* **SetBack 및 Receive**: 잘못된 조작 시 턴 시작 상태로 복구하는 기능과 타일 획득 후 자동 턴 넘김 기능을 지원합니다[cite: 110, 1126, 2214].
+* **엄격한 조합 검사**: 루미큐브의 핵심인 **런(Run)**과 **그룹(Group)** 규칙을 청크(Chunk) 단위로 파싱하여 검증합니다.
+* **첫 등록 30점 규칙**: 첫 번째 타일 제출 시 숫자 합이 30 이상이어야 하는 규칙을 강제합니다.
+* **조커 타일 처리**: 모든 색상과 숫자를 대체할 수 있는 조커의 특성을 반영하고, 배치 위치에 따른 예외 처리를 완료했습니다.
+* **SetBack 및 Receive**: 잘못된 조작 시 턴 시작 상태로 복구하는 기능과 타일 획득 후 자동 턴 넘김 기능을 지원합니다.
 
 ### 3. 고도화된 UI/UX (User Interface)
-* **DPI 및 해상도 대응**: 모니터 배율이나 해상도에 관계없이 UI가 깨지지 않도록 디자인 좌표(1280x720) 기반의 스케일링 헬퍼 함수를 적용했습니다 [cite: 798-802, 1639].
-* **커스텀 렌더링**: `OnPaint`와 `DrawMyTiles`를 통해 직접 디자인한 PNG 타일 리소스를 격자에 맞게 렌더링합니다[cite: 555, 654, 683, 1984].
-* **실시간 채팅 및 로그**: 플레이어 간 소통을 위한 채팅창과 게임 이벤트를 기록하는 시스템 로그를 제공합니다[cite: 1560, 1598, 2010].
+* **DPI 및 해상도 대응**: 모니터 배율이나 해상도에 관계없이 UI가 깨지지 않도록 디자인 좌표(1280x720) 기반의 스케일링 헬퍼 함수를 적용했습니다.
+* **커스텀 렌더링**: `OnPaint`와 `DrawMyTiles`를 통해 직접 디자인한 PNG 타일 리소스를 격자에 맞게 렌더링합니다.
+* **실시간 채팅 및 로그**: 플레이어 간 소통을 위한 채팅창과 게임 이벤트를 기록하는 시스템 로그를 제공합니다.
 
 ---
 
@@ -65,8 +78,8 @@ git clone [https://github.com/SSUNOWL/MFC_Project.git](https://github.com/SSUNOW
 ## 📂 프로젝트 구조
 
 ```text
-├── Server/Client Dlg  # 메인 UI 및 이벤트 핸들링 [cite: 534]
-├── Socket Classes     # CAsyncSocket 기반 통신 레이어 [cite: 361, 1993]
-├── Tile Structure     # 타일 속성(색상, 숫자, ID) 정의 [cite: 266, 1910]
-├── Validation Logic   # 런/그룹 및 점수 계산 엔진 [cite: 1232, 2130]
-└── Resources (PNG)    # Canva로 디자인된 106장의 타일 이미지 [cite: 555, 1931]
+├── Server/Client Dlg  # 메인 UI 및 이벤트 핸들링
+├── Socket Classes     # CAsyncSocket 기반 통신 레이어
+├── Tile Structure     # 타일 속성(색상, 숫자, ID) 정의
+├── Validation Logic   # 런/그룹 및 점수 계산 엔진
+└── Resources (PNG)    # Canva로 디자인된 106장의 타일 이미지
